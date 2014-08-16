@@ -3,16 +3,15 @@ Crispy
 
 ## Introduction
 
-Crispy is a functional programming language that targets the .NET DLR.  It is
-currently a rule language in a larger project.
+Crispy is a functional programming language that targets the .NET DLR.
 
 Crispy compiles down to .NET bytecode, so it is very, very fast.
 
 ## Syntax
 
-Crispy is a simple language.  It was written to be a simple rule language that could use used by clients and CSTs, while being expressive enough for a developer to work with.
+Crispy is a simple language.
 
-There are two ways for devs to use for Crispy: a simple, rules-based syntax and a more expressive syntax.  An example of the simple syntax would be:
+An example Crispy syntax would be:
 
 	if (time == now) then
 		send("ready")
@@ -28,7 +27,7 @@ There are two ways for devs to use for Crispy: a simple, rules-based syntax and 
 		...
 	endif
 
-The other syntax has functions, variables, loops, arrays, lambda expressions, first class functions, namespaces, closures, and .NET integration.  
+The other syntax has functions, variables, loops, arrays, lambda expressions, first class functions, namespaces, closures, and .NET integration.
 
 An example of the more advanced syntax would be:
 
