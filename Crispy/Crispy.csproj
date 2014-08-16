@@ -1,0 +1,92 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>10.0.0</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{BC2BDAD7-DC0D-4375-ACE2-BAB1FDC98268}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>Crispy</RootNamespace>
+    <AssemblyName>Crispy</AssemblyName>
+    <ReleaseVersion>0.2</ReleaseVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>True</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>False</Optimize>
+    <OutputPath>bin\Debug</OutputPath>
+    <DefineConstants>DEBUG;</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>False</ConsolePause>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>none</DebugType>
+    <Optimize>True</Optimize>
+    <OutputPath>bin\Release</OutputPath>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>False</ConsolePause>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\packages\Newtonsoft.Json.6.0.1\lib\net40\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Dynamic" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Ast\AssignmentExpression.cs" />
+    <Compile Include="Ast\BinaryExpression.cs" />
+    <Compile Include="Ast\BreakExpression.cs" />
+    <Compile Include="Ast\ExpressionStatement.cs" />
+    <Compile Include="Ast\ImportStatement.cs" />
+    <Compile Include="Ast\IndexExpression.cs" />
+    <Compile Include="Ast\MemberExpression.cs" />
+    <Compile Include="Ast\NamedExpression.cs" />
+    <Compile Include="Ast\NewExpression.cs" />
+    <Compile Include="Ast\NullStatement.cs" />
+    <Compile Include="Ast\ParentesizedExpression.cs" />
+    <Compile Include="Ast\ConstantExpression.cs" />
+    <Compile Include="Ast\VarStatement.cs" />
+    <Compile Include="Ast\LoopStatement.cs" />
+    <Compile Include="Binders\InvokeMemberBinderKey.cs" />
+    <Compile Include="Crispy.cs" />
+    <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="Parsing\ParserException.cs" />
+    <Compile Include="Parsing\Parser.cs" />
+    <Compile Include="Parsing\PositionalTextReader.cs" />
+    <Compile Include="Parsing\Token.cs" />
+    <Compile Include="Parsing\Tokenizer.cs" />
+    <Compile Include="Parsing\TokenizerException.cs" />
+    <Compile Include="Parsing\TokenType.cs" />
+    <Compile Include="Ast\IfStatement.cs" />
+    <Compile Include="Ast\NodeExpression.cs" />
+    <Compile Include="Ast\BlockStatement.cs" />
+    <Compile Include="Ast\FunctionCallExpression.cs" />
+    <Compile Include="Ast\FunctionDefStatement.cs" />
+    <Compile Include="Ast\ReturnStatement.cs" />
+    <Compile Include="TypeModel.cs" />
+    <Compile Include="TypeModelMetaObject.cs" />
+    <Compile Include="Binders\DoHelpersGetMemberBinder.cs" />
+    <Compile Include="Binders\DoHelpersSetMemberBinder.cs" />
+    <Compile Include="Helpers\DynamicObjectHelpers.cs" />
+    <Compile Include="Helpers\RuntimeHelpers.cs" />
+    <Compile Include="Context.cs" />
+    <Compile Include="Binders\CrispySetMemberBinder.cs" />
+    <Compile Include="Binders\CrispyGetMemberBinder.cs" />
+    <Compile Include="Binders\CrispyInvokeMemberBinder.cs" />
+    <Compile Include="Binders\CrispyInvokeBinder.cs" />
+    <Compile Include="Binders\CrispyCreateInstanceBinder.cs" />
+    <Compile Include="Binders\CrispyBinaryOperationBinder.cs" />
+    <Compile Include="Binders\CrispyUnaryOperationBinder.cs" />
+    <Compile Include="Ast\LambdaExpression.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <ItemGroup />
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+</Project>

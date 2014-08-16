@@ -1,0 +1,80 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Crispy", "Crispy\Crispy.csproj", "{BC2BDAD7-DC0D-4375-ACE2-BAB1FDC98268}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Crispy.Tests", "Crispy.Tests\Crispy.Tests.csproj", "{AFE89E1B-BA24-498A-B163-6EA25BF39B52}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{9F5730A6-BCD2-4A0A-98EF-018BDF4CB66D}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|Mixed Platforms = Debug|Mixed Platforms
+		Debug|x86 = Debug|x86
+		Release|Any CPU = Release|Any CPU
+		Release|Mixed Platforms = Release|Mixed Platforms
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AFE89E1B-BA24-498A-B163-6EA25BF39B52}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AFE89E1B-BA24-498A-B163-6EA25BF39B52}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AFE89E1B-BA24-498A-B163-6EA25BF39B52}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{AFE89E1B-BA24-498A-B163-6EA25BF39B52}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{AFE89E1B-BA24-498A-B163-6EA25BF39B52}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{AFE89E1B-BA24-498A-B163-6EA25BF39B52}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AFE89E1B-BA24-498A-B163-6EA25BF39B52}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AFE89E1B-BA24-498A-B163-6EA25BF39B52}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{AFE89E1B-BA24-498A-B163-6EA25BF39B52}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{AFE89E1B-BA24-498A-B163-6EA25BF39B52}.Release|x86.ActiveCfg = Release|Any CPU
+		{BC2BDAD7-DC0D-4375-ACE2-BAB1FDC98268}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BC2BDAD7-DC0D-4375-ACE2-BAB1FDC98268}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BC2BDAD7-DC0D-4375-ACE2-BAB1FDC98268}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{BC2BDAD7-DC0D-4375-ACE2-BAB1FDC98268}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{BC2BDAD7-DC0D-4375-ACE2-BAB1FDC98268}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{BC2BDAD7-DC0D-4375-ACE2-BAB1FDC98268}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BC2BDAD7-DC0D-4375-ACE2-BAB1FDC98268}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BC2BDAD7-DC0D-4375-ACE2-BAB1FDC98268}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{BC2BDAD7-DC0D-4375-ACE2-BAB1FDC98268}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{BC2BDAD7-DC0D-4375-ACE2-BAB1FDC98268}.Release|x86.ActiveCfg = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+	EndGlobalSection
+	GlobalSection(MonoDevelopProperties) = preSolution
+		StartupItem = Crispy\Crispy.csproj
+		Policies = $0
+		$0.DotNetNamingPolicy = $1
+		$1.DirectoryNamespaceAssociation = None
+		$1.ResourceNamePolicy = FileFormatDefault
+		$0.TextStylePolicy = $2
+		$2.inheritsSet = VisualStudio
+		$2.inheritsScope = text/plain
+		$2.scope = text/x-csharp
+		$0.CSharpFormattingPolicy = $3
+		$3.IndentSwitchBody = True
+		$3.AnonymousMethodBraceStyle = NextLine
+		$3.PropertyBraceStyle = NextLine
+		$3.PropertyGetBraceStyle = NextLine
+		$3.PropertySetBraceStyle = NextLine
+		$3.EventBraceStyle = NextLine
+		$3.EventAddBraceStyle = NextLine
+		$3.EventRemoveBraceStyle = NextLine
+		$3.StatementBraceStyle = NextLine
+		$3.ArrayInitializerBraceStyle = NextLine
+		$3.BeforeMethodDeclarationParentheses = False
+		$3.BeforeMethodCallParentheses = False
+		$3.BeforeConstructorDeclarationParentheses = False
+		$3.BeforeDelegateDeclarationParentheses = False
+		$3.NewParentheses = False
+		$3.inheritsSet = Mono
+		$3.inheritsScope = text/x-csharp
+		$3.scope = text/x-csharp
+		version = 0.2
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
