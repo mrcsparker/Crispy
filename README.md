@@ -16,7 +16,7 @@ An example Crispy syntax would be:
 	if (time == now) then
 		send("ready")
 	endif
-	
+
 	if (1 > 2) then
 		if (a or b) then
 			...
@@ -43,7 +43,7 @@ An example of the more advanced syntax would be:
 	x[0] = 'yyy'
 
 	// functions
-	function add(a, b) {
+	defun add(a, b) {
 		a + b
 	}
 	
