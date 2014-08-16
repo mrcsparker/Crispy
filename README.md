@@ -3,9 +3,19 @@ Crispy
 
 ## Introduction
 
-Crispy is a functional programming language that targets the .NET DLR.
+Crispy is a functional programming language that targets the .NET DLR.  It targets both the MS .NET runtime and the Mono .net runtime.  It was developed using Mono on Mac OS X and runs on Windows, Mac OS X, and GNU/Linux.
 
 Crispy compiles down to .NET bytecode, so it is very, very fast.
+
+## License
+
+Crispy uses a MIT License, which means that you can do what you want with it:
+
+	+ Use it to learn about the .NET DLR
+	+ Use it in your FOSS program
+	+ Use it in your proprietary program
+
+Please send me any bug fixes or enhancements.
 
 ## Syntax
 
@@ -57,6 +67,7 @@ An example of the more advanced syntax would be:
 
 	add2(3, 4)
 	
+
 
 ## Crispy EBNF (old, will update)
 
