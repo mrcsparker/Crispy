@@ -3,9 +3,11 @@ Crispy
 
 ## Introduction
 
-Crispy is a functional programming language that targets the .NET DLR.  It targets both the MS .NET runtime and the Mono .net runtime.  It was developed using Mono on Mac OS X and runs on Windows, Mac OS X, and GNU/Linux.
+Crispy is a kind-of functional programming language that targets the .NET DLR.  It targets both the MS .NET runtime and the Mono .net runtime.  It was developed using Mono on Mac OS X and runs on Windows, Mac OS X, and GNU/Linux.
 
 Crispy compiles down to .NET bytecode, so it is very, very fast.
+
+It was developed as a prototype for a rules language.
 
 ## License
 
@@ -36,6 +38,8 @@ An example Crispy syntax would be:
 	else
 		...
 	endif
+	
+Note that you can use if/then/else/elsif/endif or `{`, `}`.  Crispy doesn't really care how you like to group your expressions.
 
 The other syntax has functions, variables, loops, arrays, lambda expressions, first class functions, namespaces, closures, and .NET integration.
 
