@@ -11,9 +11,9 @@ Crispy compiles down to .NET bytecode, so it is very, very fast.
 
 Crispy uses a MIT License, which means that you can do what you want with it:
 
-	+ Use it to learn about the .NET DLR
-	+ Use it in your FOSS program
-	+ Use it in your proprietary program
++ Use it to learn about the .NET DLR
++ Use it in your FOSS program
++ Use it in your proprietary program
 
 Please send me any bug fixes or enhancements.
 
@@ -62,12 +62,40 @@ An example of the more advanced syntax would be:
 
 	// lambda expressions
 	var add2 = lambda(x, y) {
-    	x + y
+    		x + y
 	}
 
 	add2(3, 4)
 	
-
+	// loops
+	
+	var start = 0
+	var stop = 10
+	loop {
+		start += 1
+		if (start == stop) {
+			break
+		}
+	}
+	
+	// combine those, and you can add all sorts of things...
+	defun map(fn, a) {
+    		var i = 0
+    		loop {
+        		a[i] = fn(a[i])
+        		i = i + 1
+        		if (i == a.count) {
+            			break
+        		}     
+    		}
+	}
+	
+	var a = array();
+	a.add(1)
+	a.add(2)
+	a.add(3)
+	
+	map(lambda(x) { x * 2 }, a);
 
 ## Crispy EBNF (old, will update)
 
