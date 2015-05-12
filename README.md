@@ -95,7 +95,8 @@ An example of the more advanced syntax would be:
 	a.add(2)
 	a.add(3)
 	
-	map(lambda(x) { x * 2 }, a);
+	var results = map(lambda(x) { x * 2 }, a);
+	
 
 ## Crispy EBNF (old, will update)
 
