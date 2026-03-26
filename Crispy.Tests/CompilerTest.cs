@@ -8,7 +8,7 @@ namespace Crispy.Tests
     public class CompilerTest
     {
         private readonly CrispyRuntime _Crispy;
-        private readonly ExpandoObject _scope = new ExpandoObject();
+        private readonly ExpandoObject _scope = new();
 
         public CompilerTest()
         {

@@ -1,9 +1,9 @@
 using System;
-using System.Dynamic;
-using Crispy.Helpers;
-using System.Linq;
 using System.Diagnostics;
+using System.Dynamic;
+using System.Linq;
 using System.Linq.Expressions;
+using Crispy.Helpers;
 
 namespace Crispy.Binders
 {

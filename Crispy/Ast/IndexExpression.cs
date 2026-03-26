@@ -1,7 +1,7 @@
 using System;
 using System.Linq.Expressions;
-using Crispy.Helpers;
 using System.Reflection;
+using Crispy.Helpers;
 
 namespace Crispy.Ast
 {

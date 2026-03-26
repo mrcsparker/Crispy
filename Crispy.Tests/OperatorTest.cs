@@ -7,8 +7,8 @@ namespace Crispy.Tests
     [TestFixture]
     public class OperatorTest
     {
-        private readonly CrispyRuntime _crispy = new CrispyRuntime([typeof(object).Assembly]);
-        private readonly ExpandoObject _scope = new ExpandoObject();
+        private readonly CrispyRuntime _crispy = new([typeof(object).Assembly]);
+        private readonly ExpandoObject _scope = new();
 
         [Test]
         public void ShouldEvaluateBitwiseOperators()

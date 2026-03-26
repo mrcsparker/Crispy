@@ -1,8 +1,8 @@
 using System;
 using System.Dynamic;
+using System.Linq.Expressions;
 using System.Reflection;
 using Crispy.Helpers;
-using System.Linq.Expressions;
 
 namespace Crispy.Binders
 {
@@ -27,7 +27,10 @@ namespace Crispy.Binders
 
             // Defer if any object has no value so that we evaulate their
             // Expressions and nest a CallSite for the InvokeMember.
-            if (!target.HasValue) return Defer(target);
+            if (!target.HasValue)
+            {
+                return Defer(target);
+            }
 
             if (target.Value is ExpandoObject)
             {

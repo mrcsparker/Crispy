@@ -1,7 +1,7 @@
 using System;
 using System.Dynamic;
-using System.Reflection;
 using System.Linq.Expressions;
+using System.Reflection;
 using Crispy.Helpers;
 
 namespace Crispy.Binders
@@ -23,7 +23,10 @@ namespace Crispy.Binders
 
             // Defer if any object has no value so that we evaulate their
             // Expressions and nest a CallSite for the InvokeMember.
-            if (!target.HasValue) return Defer(target);
+            if (!target.HasValue)
+            {
+                return Defer(target);
+            }
             // Find our own binding.
             const BindingFlags flags = BindingFlags.IgnoreCase | BindingFlags.Static |
                 BindingFlags.Instance | BindingFlags.Public;
@@ -37,12 +40,17 @@ namespace Crispy.Binders
                 // TypeModel, similar to ConvertArguments, and building an
                 // expression like GetRuntimeTypeMoFromModel.
                 if (mem.MemberType == MemberTypes.Property)
+                {
                     val = Expression.Convert(value.Expression,
                         ((PropertyInfo)mem).PropertyType);
+                }
                 else if (mem.MemberType == MemberTypes.Field)
+                {
                     val = Expression.Convert(value.Expression,
                         ((FieldInfo)mem).FieldType);
+                }
                 else
+                {
                     return (errorSuggestion ??
                         RuntimeHelpers.CreateThrow(
                             target, null,
@@ -52,6 +60,8 @@ namespace Crispy.Binders
                             typeof(InvalidOperationException),
                             "Crispy only supports setting Properties and " +
                             "fields at this time."));
+                }
+
                 return new DynamicMetaObject(
                     // Assign returns the stored value, so we're good for Crispy.
                     RuntimeHelpers.EnsureObjectResult(

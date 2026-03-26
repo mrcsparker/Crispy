@@ -1,12 +1,12 @@
 using System;
+using System.Collections.Generic;
+using System.Dynamic;
 using System.IO;
 using System.Linq.Expressions;
-using Crispy.Parsing;
-using System.Dynamic;
 using System.Reflection;
-using System.Collections.Generic;
-using Crispy.Helpers;
 using Crispy.Binders;
+using Crispy.Helpers;
+using Crispy.Parsing;
 
 namespace Crispy
 {
@@ -116,7 +116,7 @@ namespace Crispy
             var moduleNamespace = CreateNamespace();
             ExecuteFileInScope(filename, moduleNamespace);
 
-            globalVar = globalVar ?? Path.GetFileNameWithoutExtension(filename);
+            globalVar ??= Path.GetFileNameWithoutExtension(filename);
             DynamicObjectHelpers.SetMember(Globals, globalVar, moduleNamespace);
 
             return moduleNamespace;
@@ -238,7 +238,10 @@ namespace Crispy
                 // some interop cases work, but the cost is that if a Crispy program
                 // spells ".foo" and ".Foo" at different sites, they won't share rules.
                 if (_getMemberBinders.TryGetValue(name, out var binder))
+                {
                     return binder;
+                }
+
                 binder = new CrispyGetMemberBinder(name);
                 _getMemberBinders[name] = binder;
                 return binder;
@@ -256,7 +259,10 @@ namespace Crispy
                 // some interop cases work, but the cost is that if a Crispy program
                 // spells ".foo" and ".Foo" at different sites, they won't share rules.
                 if (_setMemberBinders.TryGetValue(name, out var binder))
+                {
                     return binder;
+                }
+
                 binder = new CrispySetMemberBinder(name);
                 _setMemberBinders[name] = binder;
                 return binder;
@@ -270,7 +276,10 @@ namespace Crispy
             lock (_invokeBinders)
             {
                 if (_invokeBinders.TryGetValue(info, out var binder))
+                {
                     return binder;
+                }
+
                 binder = new CrispyInvokeBinder(info);
                 _invokeBinders[info] = binder;
                 return binder;
@@ -285,7 +294,10 @@ namespace Crispy
             lock (_invokeMemberBinders)
             {
                 if (_invokeMemberBinders.TryGetValue(info, out var binder))
+                {
                     return binder;
+                }
+
                 binder = new CrispyInvokeMemberBinder(info.Name, info.Info);
                 _invokeMemberBinders[info] = binder;
                 return binder;
@@ -299,7 +311,10 @@ namespace Crispy
             lock (_createInstanceBinders)
             {
                 if (_createInstanceBinders.TryGetValue(info, out var binder))
+                {
                     return binder;
+                }
+
                 binder = new CrispyCreateInstanceBinder(info);
                 _createInstanceBinders[info] = binder;
                 return binder;
@@ -313,7 +328,10 @@ namespace Crispy
             lock (_binaryOperationBinders)
             {
                 if (_binaryOperationBinders.TryGetValue(op, out var binder))
+                {
                     return binder;
+                }
+
                 binder = new CrispyBinaryOperationBinder(op);
                 _binaryOperationBinders[op] = binder;
                 return binder;
@@ -327,7 +345,10 @@ namespace Crispy
             lock (_unaryOperationBinders)
             {
                 if (_unaryOperationBinders.TryGetValue(op, out var binder))
+                {
                     return binder;
+                }
+
                 binder = new CrispyUnaryOperationBinder(op);
                 _unaryOperationBinders[op] = binder;
                 return binder;

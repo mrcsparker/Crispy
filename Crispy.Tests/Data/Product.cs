@@ -7,7 +7,7 @@ namespace Crispy.Tests.Data
 {
     internal sealed class Product
     {
-        private readonly StringBuilder _output = new StringBuilder();
+        private readonly StringBuilder _output = new();
         public String Name { get; set; } = string.Empty;
         public Double Price { get; set; }
         public Double Volume { get; set; }

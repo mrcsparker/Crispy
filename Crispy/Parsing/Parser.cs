@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using ExpressionType = System.Linq.Expressions.ExpressionType;
 using Crispy.Ast;
+using ExpressionType = System.Linq.Expressions.ExpressionType;
 
 namespace Crispy.Parsing
 {

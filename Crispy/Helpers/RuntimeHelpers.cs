@@ -1,12 +1,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
-using System.Linq.Expressions;
-using System.Diagnostics;
-using System.Reflection;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
 using Crispy.Binders;
 
 namespace Crispy.Helpers

@@ -25,7 +25,10 @@ namespace Crispy.Ast
             while (curscope != null)
             {
                 if (curscope.IsLoop)
+                {
                     return curscope;
+                }
+
                 curscope = curscope.Parent;
             }
             return null;

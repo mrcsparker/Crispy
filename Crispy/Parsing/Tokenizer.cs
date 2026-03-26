@@ -11,8 +11,8 @@ namespace Crispy.Parsing
     /// </summary>
     public class Tokenizer
     {
-        private static readonly Dictionary<string, TokenType> Keywords = new Dictionary<string, TokenType>
-            {
+        private static readonly Dictionary<string, TokenType> Keywords = new()
+        {
                 {"if", TokenType.KeywordIf},
                 {"then", TokenType.KeywordThen},
                 {"else", TokenType.KeywordElse},
@@ -48,8 +48,8 @@ namespace Crispy.Parsing
                 {"new", TokenType.KeywordNew}
             };
 
-        private static readonly Dictionary<string, TokenType> Operators = new Dictionary<string, TokenType>
-            {
+        private static readonly Dictionary<string, TokenType> Operators = new()
+        {
                 {"!", TokenType.Exclamation},
                 {"!=", TokenType.ExclamationEqual},
                 {"%", TokenType.Percent},
@@ -146,7 +146,9 @@ namespace Crispy.Parsing
         private void IgnoreWhiteSpace()
         {
             while (char.IsWhiteSpace(CurrentChar))
+            {
                 NextChar();
+            }
         }
 
         private bool IsIdentifier()
@@ -307,7 +309,10 @@ namespace Crispy.Parsing
             for (; ; )
             {
                 if (CurrentChar == '\n' || CurrentChar == '\r')
+                {
                     break;
+                }
+
                 NextChar();
             }
             NextChar();

@@ -1,7 +1,7 @@
-using Crispy.Tests.Data;
-using NUnit.Framework;
 using System.Dynamic;
 using System.Reflection;
+using Crispy.Tests.Data;
+using NUnit.Framework;
 
 namespace Crispy.Tests
 {
