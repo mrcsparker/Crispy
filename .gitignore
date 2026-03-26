@@ -1,22 +1,39 @@
-#User Specific
+# User-specific files
+*.user
 *.userprefs
 *.usertasks
+*.userosscache
+*.suo
+*.rsuser
+*.sln.docstates
 
-#Mono Project Files
-*.pidb
-*.resources
+# Build outputs
+[Bb]in/
+[Oo]bj/
+artifacts/
+TestResults/
 test-results/
 
-[Oo]bj
-[Bb]in
-*.user
-*.suo
+# Package artifacts
+*.nupkg
+*.snupkg
+
+# Mono project files
+*.pidb
+*.resources
+
+# Logs and caches
 *.[Cc]ache
 *.bak
 *.ncb
-*.log 
-*.DS_Store
-[Tt]humbs.db 
-_ReSharper.*
+*.log
+
+# IDE folders
+.vs/
+_ReSharper.*/
 *.resharper
 Ankh.NoLoad
+
+# OS files
+*.DS_Store
+[Tt]humbs.db
