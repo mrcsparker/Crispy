@@ -1,28 +1,25 @@
-﻿using System;
+using System;
 using System.Linq.Expressions;
 
 namespace Crispy.Ast
 {
-    class BreakExpression : NodeExpression
+    sealed class BreakExpression : NodeExpression
     {
-        NodeExpression _expr;
-
-        public BreakExpression(NodeExpression expr)
+        public BreakExpression(NodeExpression? expr)
         {
-            _expr = expr;
+            _ = expr;
         }
 
         protected internal override Expression Eval(Context scope)
         {
-            var loopscope = _findFirstLoop(scope);
-            if (loopscope == null)
-                throw new InvalidOperationException(
-                               "Call to Break not inside loop.");
-            return Expression.Break(loopscope.LoopBreak, 
+            var loopscope = FindFirstLoop(scope) ??
+                throw new InvalidOperationException("Call to Break not inside loop.");
+            return Expression.Break(loopscope.LoopBreak ??
+                throw new InvalidOperationException("Loop break label was not initialized."),
                 Expression.Constant(null, typeof(object)), typeof(object));
         }
 
-        private static Context _findFirstLoop(Context scope)
+        private static Context? FindFirstLoop(Context scope)
         {
             var curscope = scope;
             while (curscope != null)

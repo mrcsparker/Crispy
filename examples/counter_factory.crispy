@@ -1,0 +1,19 @@
+// Nested named functions that close over mutable state.
+
+defun makeAccumulator(start, step) {
+    var total = start
+
+    defun next() {
+        total = total + step
+        total
+    }
+
+    next
+}
+
+defun run() {
+    var slow = makeAccumulator(0, 2)
+    var fast = makeAccumulator(10, 5)
+
+    slow() + slow() + fast()
+}

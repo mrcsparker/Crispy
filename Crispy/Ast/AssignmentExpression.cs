@@ -1,8 +1,8 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 
 namespace Crispy.Ast
 {
-    class AssignmentExpression : NodeExpression
+    sealed class AssignmentExpression : NodeExpression
     {
         private readonly NodeExpression _left;
         private readonly NodeExpression _right;
@@ -15,7 +15,7 @@ namespace Crispy.Ast
 
         protected internal override Expression Eval(Context scope)
         {
-            return _left.SetVariable(scope, _right.Eval(scope));   
+            return _left.SetVariable(scope, _right.Eval(scope));
         }
-    } 
+    }
 }

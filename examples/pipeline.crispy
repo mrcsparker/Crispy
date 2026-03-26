@@ -1,0 +1,83 @@
+// Higher-order functions over a .NET ArrayList.
+
+import system.collections as collections
+
+defun array() {
+    new collections.ArrayList()
+}
+
+defun range(start, stop) {
+    var values = array()
+    var current = start
+
+    loop {
+        if (current > stop) {
+            break
+        }
+
+        values.Add(current)
+        current = current + 1
+    }
+
+    values
+}
+
+defun map(values, projector) {
+    var result = array()
+    var index = 0
+
+    loop {
+        if (index >= values.Count) {
+            break
+        }
+
+        result.Add(projector(values[index]))
+        index = index + 1
+    }
+
+    result
+}
+
+defun filter(values, predicate) {
+    var result = array()
+    var index = 0
+
+    loop {
+        if (index >= values.Count) {
+            break
+        }
+
+        var value = values[index]
+        if (predicate(value)) {
+            result.Add(value)
+        }
+
+        index = index + 1
+    }
+
+    result
+}
+
+defun reduce(values, seed, folder) {
+    var total = seed
+    var index = 0
+
+    loop {
+        if (index >= values.Count) {
+            break
+        }
+
+        total = folder(total, values[index])
+        index = index + 1
+    }
+
+    total
+}
+
+defun run() {
+    var values = range(1, 10)
+    var evens = filter(values, lambda(x) { (x % 2) == 0 })
+    var squares = map(evens, lambda(x) { x * x })
+
+    reduce(squares, 0, lambda(total, x) { total + x })
+}

@@ -1,0 +1,15 @@
+// Word-form operator aliases.
+
+defun run() {
+    var total = 10 mod 4
+
+    if (not false and 4 eq 4) {
+        total = total + (5 xor 3)
+    }
+
+    if (false or false) {
+        total = 0
+    }
+
+    total
+}

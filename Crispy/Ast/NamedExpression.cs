@@ -1,8 +1,8 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 
 namespace Crispy.Ast
 {
-    class NamedExpression : NodeExpression
+    sealed class NamedExpression : NodeExpression
     {
         private readonly string _name;
 
@@ -14,15 +14,10 @@ namespace Crispy.Ast
         protected internal override Expression Eval(Context scope)
         {
             var variable = scope.LookupName(_name);
-            if (variable != null)
-            {
-                return variable;
-            }
-
-            return Expression.Dynamic(
-                scope.GetRuntime().GetGetMemberBinder(_name),
+            return variable ?? Expression.Dynamic(
+                scope.Runtime.GetGetMemberBinder(_name),
                 typeof(object),
-                scope.GetModuleExpr()
+                scope.ModuleExpr
             );
         }
 
@@ -42,7 +37,8 @@ namespace Crispy.Ast
             return variable;
         }
 
-        public override string Name {
+        public override string Name
+        {
             get { return _name; }
         }
 

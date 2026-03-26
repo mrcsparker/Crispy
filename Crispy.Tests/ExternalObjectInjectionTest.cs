@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -10,12 +10,12 @@ using System.Dynamic;
 namespace Crispy.Tests
 {
     [TestFixture]
-    class ExternalObjectInjectionTest
+    public sealed class ExternalObjectInjectionTest
     {
-        private readonly Crispy _Crispy;
+        private readonly CrispyRuntime _Crispy;
         private readonly Product _product;
 
-        private static IEnumerable<Product> GetProductList()
+        private static List<Product> GetProductList()
         {
             var products = new List<Product>
             {
@@ -41,13 +41,12 @@ namespace Crispy.Tests
 
         public ExternalObjectInjectionTest()
         {
-            string dllPath = typeof(object).Assembly.Location;
-            Assembly asm = Assembly.LoadFile(dllPath);
+            Assembly asm = typeof(object).Assembly;
 
             IEnumerable<Product> productList = GetProductList();
             _product = productList.First();
 
-            _Crispy = new Crispy(new[] { asm }, new [] { _product });
+            _Crispy = new CrispyRuntime(new[] { asm }, new[] { _product });
         }
 
         public object Exec(string text)
@@ -58,11 +57,11 @@ namespace Crispy.Tests
         [Test]
         public void ShouldBeAbleToBindInstanceToParser()
         {
-            string productNameLower = _product.Name.ToLower();
+            string productNameUpper = _product.Name.ToUpperInvariant();
 
-            var output = Exec("LowerCaseName()");
+            var output = Exec("UpperCaseName()");
 
-            Assert.AreEqual(output, productNameLower);
+            Assert.AreEqual(output, productNameUpper);
         }
 
         [Test]
@@ -70,14 +69,15 @@ namespace Crispy.Tests
         {
             IEnumerable<Product> productList = GetProductList();
             Product product = productList.First();
-            string productNameLower = product.Name.ToLower();
+            string productNameUpper = product.Name.ToUpperInvariant();
 
-            MethodInfo method = typeof (Product).GetMethod("LowerCaseName");
+            MethodInfo? method = typeof(Product).GetMethod("UpperCaseName");
+            Assert.NotNull(method);
 
-            MethodCallExpression expression = Expression.Call(Expression.Constant(product), method);
+            MethodCallExpression expression = Expression.Call(Expression.Constant(product), method!);
             Func<string> output = Expression.Lambda<Func<string>>(expression).Compile();
 
-            Assert.AreEqual(output.Invoke(), productNameLower);
+            Assert.AreEqual(output.Invoke(), productNameUpper);
         }
 
         [Test]

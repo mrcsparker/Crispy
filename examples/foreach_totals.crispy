@@ -1,0 +1,15 @@
+defun run() {
+    var total = 0
+
+    foreach (group in [[1, 2, 3], [4, 5]]) {
+        foreach (value in group) {
+            if (value == 2) {
+                continue
+            }
+
+            total = total + value
+        }
+    }
+
+    total
+}

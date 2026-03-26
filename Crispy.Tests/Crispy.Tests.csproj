@@ -1,69 +1,32 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>8.0.30703</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{AFE89E1B-BA24-498A-B163-6EA25BF39B52}</ProjectGuid>
-    <OutputType>Library</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Crispy.Tests</RootNamespace>
     <AssemblyName>Crispy.Tests</AssemblyName>
-    <ReleaseVersion>0.5</ReleaseVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;CA1515</NoWarn>
+    <Nullable>enable</Nullable>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>All</AnalysisMode>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <NuGetAudit>false</NuGetAudit>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <IsTestProject>true</IsTestProject>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>True</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>False</Optimize>
-    <OutputPath>bin\Debug</OutputPath>
-    <DefineConstants>DEBUG;</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <ConsolePause>False</ConsolePause>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>none</DebugType>
-    <Optimize>True</Optimize>
-    <OutputPath>bin\Release</OutputPath>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <ConsolePause>False</ConsolePause>
-  </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Dynamic" />
-    <Reference Include="Newtonsoft.Json">
-      <HintPath>..\packages\Newtonsoft.Json.6.0.4\lib\net40\Newtonsoft.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="nunit.framework">
-      <HintPath>..\packages\NUnit.2.6.3\lib\nunit.framework.dll</HintPath>
-    </Reference>
+    <ProjectReference Include="..\Crispy\Crispy.csproj" />
+    <ProjectReference Include="..\Crispy.Repl\Crispy.Repl.csproj" />
   </ItemGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+
   <ItemGroup>
-    <ProjectReference Include="..\Crispy\Crispy.csproj">
-      <Project>{BC2BDAD7-DC0D-4375-ACE2-BAB1FDC98268}</Project>
-      <Name>Crispy</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="CompilerTest.cs" />
-    <Compile Include="Data\Product.cs" />
-    <Compile Include="ExternalObjectInjectionTest.cs" />
-    <Compile Include="TokenizerTest.cs" />
-    <Compile Include="FunctionCallNodeTest.cs" />
-    <Compile Include="InstanceObjectLoad.cs" />
-    <Compile Include="Data\MetricsModel.cs" />
-    <Compile Include="IfThenTest.cs" />
-    <Compile Include="FunctionTest.cs" />
-    <Compile Include="ProgramTest.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup />
-  <ItemGroup>
-    <Folder Include="Ast\" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="NUnit" Version="3.13.3" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 </Project>

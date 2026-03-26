@@ -1,0 +1,28 @@
+// Iterative Fibonacci.
+
+defun fibonacci(n) {
+    if (n <= 1) {
+        return n
+    }
+
+    var previous = 0
+    var current = 1
+    var index = 2
+
+    loop {
+        if (index > n) {
+            break
+        }
+
+        var nextValue = previous + current
+        previous = current
+        current = nextValue
+        index = index + 1
+    }
+
+    current
+}
+
+defun run() {
+    fibonacci(10)
+}

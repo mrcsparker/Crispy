@@ -1,8 +1,8 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 
 namespace Crispy.Ast
 {
-    class LoopStatement : NodeExpression
+    sealed class LoopStatement : NodeExpression
     {
         private readonly NodeExpression _body;
 
@@ -13,14 +13,25 @@ namespace Crispy.Ast
 
         protected internal override Expression Eval(Context scope)
         {
-            var loopscope = new Context(scope, "loop")
-                {
-                    IsLoop = true,
-                    LoopBreak = Expression.Label(typeof (object), "loop break")
-                };
+            var breakLabel = Expression.Label(typeof(object), "loop break");
+            var continueLabel = Expression.Label("loop continue");
+            var loopScope = new Context(scope, "loop")
+            {
+                IsLoop = true,
+                LoopBreak = breakLabel,
+                LoopContinue = continueLabel
+            };
+            var body = _body.Eval(loopScope);
 
-            return Expression.Loop(Expression.Block(typeof(object), _body.Eval(loopscope)),
-                                   loopscope.LoopBreak);
+            return loopScope.Variables.Count > 0
+                ? Expression.Loop(
+                    Expression.Block(typeof(object), [.. loopScope.Variables.Values], body),
+                    breakLabel,
+                    continueLabel)
+                : Expression.Loop(
+                    Expression.Block(typeof(object), body),
+                    breakLabel,
+                    continueLabel);
 
         }
     }

@@ -1,0 +1,20 @@
+// Expression-oriented composition with first-class functions.
+
+defun compose(outer, inner) {
+    lambda(value) {
+        outer(inner(value))
+    }
+}
+
+defun makeScaler(factor) {
+    lambda(value) {
+        value * factor
+    }
+}
+
+defun run() {
+    var doubleThenIncrement =
+        compose(lambda(x) { x + 1 }, makeScaler(2))
+
+    doubleThenIncrement(20)
+}

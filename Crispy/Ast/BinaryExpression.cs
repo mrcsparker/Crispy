@@ -1,10 +1,9 @@
-﻿using System.Linq.Expressions;
 using System.ComponentModel;
-using System;
+using System.Linq.Expressions;
 
 namespace Crispy.Ast
 {
-    class BinaryExpression : NodeExpression
+    sealed class BinaryExpression : NodeExpression
     {
         private readonly ExpressionType _binaryOperator;
         private readonly NodeExpression _left;
@@ -26,8 +25,8 @@ namespace Crispy.Ast
             ConvertIfNecessary(ref left, ref right);
 
             return Expression.Dynamic(
-                scope.GetRuntime().GetBinaryOperationBinder(_binaryOperator),
-                typeof (object),
+                scope.Runtime.GetBinaryOperationBinder(_binaryOperator),
+                typeof(object),
                 left,
                 right
             );

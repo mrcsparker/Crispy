@@ -1,0 +1,62 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="Mixed Platforms" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/Solution Items/">
+    <File Path="README.md" />
+    <File Path="tutorial.md" />
+  </Folder>
+  <Project Path="Crispy.Repl/Crispy.Repl.csproj">
+    <Build Solution="*|x86" Project="false" />
+  </Project>
+  <Project Path="Crispy.Tests/Crispy.Tests.csproj">
+    <Build Solution="*|x86" Project="false" />
+  </Project>
+  <Project Path="Crispy/Crispy.csproj">
+    <Build Solution="*|x86" Project="false" />
+  </Project>
+  <Properties Name="MonoDevelopProperties">
+    <Property Name="$0.CSharpFormattingPolicy" Value="$3" />
+    <Property Name="$0.DotNetNamingPolicy" Value="$1" />
+    <Property Name="$0.TextStylePolicy" Value="$5" />
+    <Property Name="$0.XmlFormattingPolicy" Value="$6" />
+    <Property Name="$1.DirectoryNamespaceAssociation" Value="None" />
+    <Property Name="$1.ResourceNamePolicy" Value="FileFormatDefault" />
+    <Property Name="$2.inheritsScope" Value="text/plain" />
+    <Property Name="$2.inheritsSet" Value="VisualStudio" />
+    <Property Name="$2.scope" Value="text/x-csharp" />
+    <Property Name="$3.AnonymousMethodBraceStyle" Value="NextLine" />
+    <Property Name="$3.ArrayInitializerBraceStyle" Value="NextLine" />
+    <Property Name="$3.BeforeConstructorDeclarationParentheses" Value="False" />
+    <Property Name="$3.BeforeDelegateDeclarationParentheses" Value="False" />
+    <Property Name="$3.BeforeMethodCallParentheses" Value="False" />
+    <Property Name="$3.BeforeMethodDeclarationParentheses" Value="False" />
+    <Property Name="$3.EventAddBraceStyle" Value="NextLine" />
+    <Property Name="$3.EventBraceStyle" Value="NextLine" />
+    <Property Name="$3.EventRemoveBraceStyle" Value="NextLine" />
+    <Property Name="$3.IndentSwitchBody" Value="True" />
+    <Property Name="$3.inheritsScope" Value="text/x-csharp" />
+    <Property Name="$3.inheritsSet" Value="Mono" />
+    <Property Name="$3.NewParentheses" Value="False" />
+    <Property Name="$3.PropertyBraceStyle" Value="NextLine" />
+    <Property Name="$3.PropertyGetBraceStyle" Value="NextLine" />
+    <Property Name="$3.PropertySetBraceStyle" Value="NextLine" />
+    <Property Name="$3.scope" Value="text/x-csharp" />
+    <Property Name="$3.StatementBraceStyle" Value="NextLine" />
+    <Property Name="$4.FileWidth" Value="120" />
+    <Property Name="$4.inheritsScope" Value="text/plain" />
+    <Property Name="$4.inheritsSet" Value="VisualStudio" />
+    <Property Name="$4.scope" Value="text/plain" />
+    <Property Name="$4.TabsToSpaces" Value="False" />
+    <Property Name="$5.inheritsSet" Value="null" />
+    <Property Name="$5.scope" Value="application/xml" />
+    <Property Name="$6.inheritsScope" Value="application/xml" />
+    <Property Name="$6.inheritsSet" Value="Mono" />
+    <Property Name="$6.scope" Value="application/xml" />
+    <Property Name="Policies" Value="$0" />
+    <Property Name="StartupItem" Value="Crispy.Repl\Crispy.Repl.csproj" />
+    <Property Name="version" Value="0.5" />
+  </Properties>
+</Solution>

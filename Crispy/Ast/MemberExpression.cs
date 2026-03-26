@@ -1,45 +1,37 @@
-﻿using System.Linq.Expressions;
-using Crispy.Helpers;
-using System.Collections.Generic;
-using System;
+using System.Linq.Expressions;
 
 namespace Crispy.Ast
 {
-    class MemberExpression : NodeExpression
+    sealed class MemberExpression : NodeExpression
     {
-        private readonly NodeExpression _expr;
-        private readonly string _name;
-        private readonly MemberType _type;
+        public NodeExpression Expr { get; }
+        public override string Name { get; }
+        public MemberType Type { get; }
 
         public MemberExpression(NodeExpression expr, string name, MemberType type)
         {
-            _expr = expr;
-            _name = name;
-            _type = type;
+            Expr = expr;
+            Name = name;
+            Type = type;
         }
 
         protected internal override Expression Eval(Context scope)
         {
-
-            if (_type == MemberType.MethodCall)
-            {
-                return _expr.Eval(scope);
-            }
-
-            return Expression.Dynamic(
-                scope.GetRuntime().GetGetMemberBinder(_name),
-                typeof(object),
-                _expr.Eval(scope)
-            );
-
+            return Type == MemberType.MethodCall
+                ? Expr.Eval(scope)
+                : Expression.Dynamic(
+                    scope.Runtime.GetGetMemberBinder(Name),
+                    typeof(object),
+                    Expr.Eval(scope)
+                );
         }
 
         internal protected override Expression SetVariable(Context scope, Expression right)
         {
             return Expression.Dynamic(
-                scope.GetRuntime().GetSetMemberBinder(_name),
+                scope.Runtime.GetSetMemberBinder(Name),
                 typeof(object),
-                _expr.Eval(scope), right);
+                Expr.Eval(scope), right);
         }
 
         public override bool IsMember
@@ -47,22 +39,10 @@ namespace Crispy.Ast
             get { return true; }
         }
 
-        public NodeExpression Expr
-        {
-            get { return _expr; }
-        }
-
-        public override string Name {
-            get { return _name; }
-        }
-
-        public MemberType Type
-        {
-            get { return _type; }
-        }
     }
 
-    enum MemberType {
+    enum MemberType
+    {
         Member,
         MethodCall
     };

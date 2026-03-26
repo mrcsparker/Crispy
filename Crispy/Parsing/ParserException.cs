@@ -1,4 +1,4 @@
-﻿#region
+#region
 
 using System;
 
@@ -8,16 +8,18 @@ namespace Crispy.Parsing
 {
     public class ParserException : Exception
     {
-        private readonly string _msg;
-
-        public ParserException(string msg)
+        public ParserException()
         {
-            _msg = msg;
         }
 
-        public override string Message
+        public ParserException(string msg)
+            : base(msg)
         {
-            get { return String.Format("{0}", _msg); }
+        }
+
+        public ParserException(string message, Exception innerException)
+            : base(message, innerException)
+        {
         }
     }
 }

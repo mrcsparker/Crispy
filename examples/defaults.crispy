@@ -1,0 +1,14 @@
+defun total(base, step = 3, extra = step + 1) {
+    base + step + extra
+}
+
+defun makeAdder(offset) {
+    lambda(value, extra = offset) {
+        value + extra
+    }
+}
+
+defun run() {
+    var add7 = makeAdder(7)
+    total(10) + total(10, 2) + total(10, 2, 5) + add7(5) + add7(5, 1)
+}

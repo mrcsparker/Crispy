@@ -1,4 +1,4 @@
-Copyright (c) 2014 Chris Parker
+Copyright (c) 2014-2026 Chris Parker
 
 MIT License
 

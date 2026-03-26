@@ -7,20 +7,19 @@ namespace Crispy.Tests
     [TestFixture]
     public class CompilerTest
     {
-        private readonly Crispy _Crispy;
+        private readonly CrispyRuntime _Crispy;
         private readonly ExpandoObject _scope = new ExpandoObject();
 
         public CompilerTest()
         {
-            string dllPath = typeof(object).Assembly.Location;
-            Assembly asm = Assembly.LoadFile(dllPath);
-            _Crispy = new Crispy(new[] { asm });
+            Assembly asm = typeof(object).Assembly;
+            _Crispy = new CrispyRuntime(new[] { asm });
         }
 
         [Test]
         public void TestAdditiveNode()
         {
-            var result0 = (int) _Crispy.ExecuteExpr("100 + 2", _scope);
+            var result0 = (int)_Crispy.ExecuteExpr("100 + 2", _scope);
             Assert.AreEqual(102, result0);
 
             var result1 = (double)_Crispy.ExecuteExpr("100.1 + 100.2", _scope);
@@ -84,7 +83,7 @@ namespace Crispy.Tests
             Assert.AreEqual(17, result);
 
             result = (int)_Crispy.ExecuteExpr("1 + 13 * (18 * 16 / 4)", _scope);
-            Assert.AreEqual(937, (int) result);
+            Assert.AreEqual(937, (int)result);
 
             result = (int)_Crispy.ExecuteExpr("1 + 2 * (4 * 16 / 8) * 2 + 1", _scope);
             Assert.AreEqual(34, (int)result);
@@ -120,6 +119,24 @@ namespace Crispy.Tests
         {
             bool result = (bool)_Crispy.ExecuteExpr("'A' == 'A'", _scope);
             Assert.IsTrue(result);
+        }
+
+        [Test]
+        public void TestNullLiteral()
+        {
+            var result = _Crispy.ExecuteExpr("null", _scope);
+
+            Assert.IsNull(result);
+        }
+
+        [Test]
+        public void TestNullComparisons()
+        {
+            var result = (bool)_Crispy.ExecuteExpr("null == null", _scope);
+            Assert.IsTrue(result);
+
+            result = (bool)_Crispy.ExecuteExpr("null != null", _scope);
+            Assert.IsFalse(result);
         }
     }
 }

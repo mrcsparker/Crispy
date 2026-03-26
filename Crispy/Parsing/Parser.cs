@@ -1,14 +1,16 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Globalization;
 using ExpressionType = System.Linq.Expressions.ExpressionType;
 using Crispy.Ast;
 
 namespace Crispy.Parsing
 {
-    class Parser
+    sealed class Parser
     {
         private readonly Tokenizer _tokenizer;
-        private Token _nextToken;
+        private Token _lastConsumedToken = null!;
+        private Token _nextToken = null!;
 
         public Parser(Tokenizer tokenizer)
         {
@@ -24,6 +26,7 @@ namespace Crispy.Parsing
         public Token NextToken()
         {
             var ret = _nextToken;
+            _lastConsumedToken = ret;
             _nextToken = _tokenizer.NextToken();
             return ret;
         }
@@ -41,11 +44,10 @@ namespace Crispy.Parsing
         public Token EatToken(TokenType tokenType)
         {
             var ret = NextToken();
-            if (ret.Type != tokenType)
-            {
-                throw new ParserException(string.Format("Expected {0} but found {1}", tokenType, ret));
-            }
-            return ret;
+            return ret.Type == tokenType
+                ? ret
+                : throw new ParserException(
+                    string.Format(CultureInfo.InvariantCulture, "Expected {0} but found {1}", tokenType, ret));
         }
 
         public Token ParseId()
@@ -62,7 +64,7 @@ namespace Crispy.Parsing
                 statements.Add(ParseStatement());
             } while (!_tokenizer.EndOfFile);
 
-            return statements.ToArray();
+            return [.. statements];
         }
 
         public NodeExpression Parse()
@@ -88,24 +90,32 @@ namespace Crispy.Parsing
                     return ParseBlockStatement();
                 case TokenType.KeywordLoop:
                     return ParseLoopStatement();
+                case TokenType.KeywordForeach:
+                    return ParseForeachStatement();
+                case TokenType.KeywordTry:
+                    return ParseTryStatement();
                 case TokenType.KeywordIf:
                     return ParseIfStatement();
                 case TokenType.KeywordFunction:
                     return ParseFunctionDefStatement();
                 case TokenType.KeywordReturn:
                     return ParseReturnStatement();
+                case TokenType.KeywordThrow:
+                    return ParseThrowStatement();
                 case TokenType.KeywordVar:
                     return ParseVarStatement();
                 case TokenType.KeywordImport:
                     return ParseImportStatement();
                 case TokenType.KeywordBreak:
                     return ParseBreakStatement();
+                case TokenType.KeywordContinue:
+                    return ParseContinueStatement();
                 default:
                     return ParseExpressionStatement();
             }
         }
 
-        private NodeExpression ParseBlockStatement()
+        private BlockStatement ParseBlockStatement()
         {
             EatToken(TokenType.KeywordThen);
             var statements = new List<NodeExpression>();
@@ -122,11 +132,23 @@ namespace Crispy.Parsing
             return new BlockStatement(statements);
         }
 
-        private NodeExpression ParseLoopStatement()
+        private LoopStatement ParseLoopStatement()
         {
             EatToken(TokenType.KeywordLoop);
             NodeExpression body = ParseStatement();
             return new LoopStatement(body);
+        }
+
+        private ForeachStatement ParseForeachStatement()
+        {
+            EatToken(TokenType.KeywordForeach);
+            MaybeEatToken(TokenType.OpenParen);
+            var itemName = ParseId().Value;
+            EatToken(TokenType.KeywordIn);
+            var sequence = ParseExpression();
+            MaybeEatToken(TokenType.CloseParen);
+            var body = ParseStatement();
+            return new ForeachStatement(itemName, sequence, body);
         }
 
         /// <summary>
@@ -139,37 +161,72 @@ namespace Crispy.Parsing
         ///     end
         /// </summary>
         /// <returns></returns>
-        private NodeExpression ParseIfStatement()
+        private IfStatement ParseIfStatement()
         {
             EatToken(TokenType.KeywordIf);
 
-            var ifStatements = new List<IfStatementTest> { ParseIfStatementTest() };
+            var ifStatements = new List<IfStatementTest>();
+            MaybeEatToken(TokenType.OpenParen);
+            var firstTest = ParseExpression();
+            MaybeEatToken(TokenType.CloseParen);
+
+            var keywordStyle = IsKeywordIfBody();
+            ifStatements.Add(new IfStatementTest(firstTest, ParseIfStatementBody(keywordStyle, true)));
 
             while (MaybeEatToken(TokenType.KeywordElseIf))
             {
-                ifStatements.Add(ParseIfStatementTest());
+                MaybeEatToken(TokenType.OpenParen);
+                var test = ParseExpression();
+                MaybeEatToken(TokenType.CloseParen);
+                ifStatements.Add(new IfStatementTest(test, ParseIfStatementBody(keywordStyle, true)));
             }
 
-            NodeExpression elseStatement = null;
+            NodeExpression? elseStatement = null;
 
             if (MaybeEatToken(TokenType.KeywordElse))
             {
-                elseStatement = ParseStatement();
+                elseStatement = ParseIfStatementBody(keywordStyle, false);
+            }
+
+            if (keywordStyle)
+            {
+                EatToken(TokenType.KeywordEnd);
             }
 
             return new IfStatement(ifStatements, elseStatement);
         }
 
-        private IfStatementTest ParseIfStatementTest()
+        private bool IsKeywordIfBody()
         {
-            // (expressions)
-            MaybeEatToken(TokenType.OpenParen);
-            var test = ParseExpression();
-            MaybeEatToken(TokenType.CloseParen);
+            return PeekToken().Type == TokenType.KeywordThen &&
+                   PeekToken().Value == "then";
+        }
 
-            var body = ParseStatement();
+        private NodeExpression ParseIfStatementBody(bool keywordStyle, bool expectThen)
+        {
+            if (!keywordStyle)
+            {
+                return ParseStatement();
+            }
 
-            return new IfStatementTest(test, body);
+            if (expectThen)
+            {
+                EatToken(TokenType.KeywordThen);
+            }
+
+            var statements = new List<NodeExpression>();
+            for (; ; )
+            {
+                var close = PeekToken();
+                if (close.Type == TokenType.KeywordElseIf ||
+                    close.Type == TokenType.KeywordElse ||
+                    close.Type == TokenType.KeywordEnd)
+                {
+                    break;
+                }
+                statements.Add(ParseStatement());
+            }
+            return new BlockStatement(statements);
         }
 
         /// <summary>
@@ -179,34 +236,18 @@ namespace Crispy.Parsing
         ///     end
         /// </summary>
         /// <returns>The define function statement.</returns>
-        private NodeExpression ParseFunctionDefStatement()
+        private FunctionDefStatement ParseFunctionDefStatement()
         {
             EatToken(TokenType.KeywordFunction);
             var name = ParseId().Value;
             EatToken(TokenType.OpenParen);
-            var parameters = new List<string>();
-            for (; ; )
-            {
-                var close = PeekToken();
-                if (close.Type == TokenType.CloseParen)
-                {
-                    NextToken();
-                    break;
-                }
-                // Comma is optional
-                MaybeEatToken(TokenType.Comma);
-
-                string parameter = ParseId().Value;
-                //TODO add default values
-                parameters.Add(parameter);
-            }
-
+            var parameters = ParseCallableParameters();
             var body = ParseStatement();
 
-            return new FunctionDefStatement(name, parameters.ToArray(), body);
+            return new FunctionDefStatement(name, parameters, body);
         }
 
-        private NodeExpression ParseReturnStatement()
+        private ReturnStatement ParseReturnStatement()
         {
             EatToken(TokenType.KeywordReturn);
             if (MaybeEatToken(TokenType.SemiColon))
@@ -218,7 +259,24 @@ namespace Crispy.Parsing
             return new ReturnStatement(expression);
         }
 
-        private NodeExpression ParseVarStatement()
+        private ThrowStatement ParseThrowStatement()
+        {
+            EatToken(TokenType.KeywordThrow);
+            if (PeekToken().Type == TokenType.SemiColon ||
+                PeekToken().Type == TokenType.KeywordEnd ||
+                PeekToken().Type == TokenType.KeywordCatch ||
+                PeekToken().Type == TokenType.KeywordFinally)
+            {
+                MaybeEatToken(TokenType.SemiColon);
+                return new ThrowStatement();
+            }
+
+            var expression = ParseExpression();
+            MaybeEatToken(TokenType.SemiColon);
+            return new ThrowStatement(expression);
+        }
+
+        private VarStatement ParseVarStatement()
         {
             EatToken(TokenType.KeywordVar);
             var name = ParseId();
@@ -233,19 +291,18 @@ namespace Crispy.Parsing
             return new VarStatement(name.Value, null);
         }
 
-        private NodeExpression ParseImportStatement()
+        private ImportStatement ParseImportStatement()
         {
             EatToken(TokenType.KeywordImport);
 
-            var names = new List<string>();
-            names.Add(ParseId().Value);
+            var names = new List<string> { ParseId().Value };
 
             while (MaybeEatToken(TokenType.Dot))
             {
                 names.Add(ParseId().Value);
             }
 
-            Token nameAs = null;
+            Token? nameAs = null;
 
             if (MaybeEatToken(TokenType.KeywordAs))
             {
@@ -253,12 +310,12 @@ namespace Crispy.Parsing
             }
 
             MaybeEatToken(TokenType.SemiColon);
-            return new ImportStatement(names, nameAs != null ? nameAs.Value : null);
+            return new ImportStatement(names, nameAs?.Value);
         }
 
-        private NodeExpression ParseBreakStatement()
+        private BreakExpression ParseBreakStatement()
         {
-            NodeExpression expr = null;
+            NodeExpression? expr = null;
 
             EatToken(TokenType.KeywordBreak);
             if (MaybeEatToken(TokenType.OpenParen))
@@ -270,13 +327,52 @@ namespace Crispy.Parsing
             return new BreakExpression(expr);
         }
 
-        private NodeExpression ParseExpressionStatement()
+        private ContinueExpression ParseContinueStatement()
+        {
+            EatToken(TokenType.KeywordContinue);
+            MaybeEatToken(TokenType.SemiColon);
+            return new ContinueExpression();
+        }
+
+        private TryStatement ParseTryStatement(bool keywordConsumed = false)
+        {
+            if (!keywordConsumed)
+            {
+                EatToken(TokenType.KeywordTry);
+            }
+            var tryBody = ParseStatement();
+
+            string? catchName = null;
+            NodeExpression? catchBody = null;
+            if (MaybeEatToken(TokenType.KeywordCatch))
+            {
+                if (MaybeEatToken(TokenType.OpenParen))
+                {
+                    catchName = ParseId().Value;
+                    EatToken(TokenType.CloseParen);
+                }
+
+                catchBody = ParseStatement();
+            }
+
+            NodeExpression? finallyBody = null;
+            if (MaybeEatToken(TokenType.KeywordFinally))
+            {
+                finallyBody = ParseStatement();
+            }
+
+            return catchBody == null && finallyBody == null
+                ? throw new ParserException("try requires catch or finally")
+                : new TryStatement(tryBody, catchName, catchBody, finallyBody);
+        }
+
+        private ExpressionStatement ParseExpressionStatement()
         {
             var expression = ParseExpression();
             MaybeEatToken(TokenType.SemiColon);
             return new ExpressionStatement(expression);
         }
- 
+
         public NodeExpression ParseExpression()
         {
             var left = ParseLogicalOrExpression();
@@ -284,20 +380,23 @@ namespace Crispy.Parsing
             if (token.Type == TokenType.Equal)
             {
                 left = FinishAssignment(left);
+                token = PeekToken();
             }
-            return left;
+
+            return token.Type == TokenType.Question
+                ? throw new ParserException("Ternary operator is not supported.")
+                : left;
         }
 
         // ||, or operator
         private NodeExpression ParseLogicalOrExpression()
         {
             var left = ParseLogicalAndExpression();
-            var token = PeekToken();
-            if (token.Type == TokenType.DoubleBar)
+            while (PeekToken().Type == TokenType.DoubleBar)
             {
                 NextToken();
                 var right = ParseLogicalAndExpression();
-                left = new BinaryExpression(ExpressionType.Or, left, right);
+                left = MakeLogicalOr(left, right);
             }
             return left;
         }
@@ -306,20 +405,52 @@ namespace Crispy.Parsing
         private NodeExpression ParseLogicalAndExpression()
         {
             var left = ParseComparativeExpression();
-            var token = PeekToken();
-            if (token.Type == TokenType.DoubleAmphersand)
+            while (PeekToken().Type == TokenType.DoubleAmphersand)
             {
                 NextToken();
                 var right = ParseComparativeExpression();
-                left = new BinaryExpression(ExpressionType.And, left, right);
+                left = MakeLogicalAnd(left, right);
             }
             return left;
+        }
+
+        private static IfStatement MakeLogicalAnd(NodeExpression left, NodeExpression right)
+        {
+            left = UnwrapParens(left);
+            right = UnwrapParens(right);
+            return new IfStatement(
+                [new IfStatementTest(left, WrapExpressionAsBlock(right))],
+                WrapExpressionAsBlock(new ConstantExpression(false)));
+        }
+
+        private static IfStatement MakeLogicalOr(NodeExpression left, NodeExpression right)
+        {
+            left = UnwrapParens(left);
+            right = UnwrapParens(right);
+            return new IfStatement(
+                [new IfStatementTest(left, WrapExpressionAsBlock(new ConstantExpression(true)))],
+                WrapExpressionAsBlock(right));
+        }
+
+        private static NodeExpression UnwrapParens(NodeExpression expression)
+        {
+            while (expression is ParentesizedExpression parentesizedExpression)
+            {
+                expression = parentesizedExpression.Expression;
+            }
+
+            return expression;
+        }
+
+        private static BlockStatement WrapExpressionAsBlock(NodeExpression expression)
+        {
+            return new BlockStatement([new ExpressionStatement(expression)]);
         }
 
         // ==, !=, <>, >, >=, <, <= operators
         private NodeExpression ParseComparativeExpression()
         {
-            var left = ParseAdditiveExpression();
+            var left = ParseBitwiseOrExpression();
             while (
                 PeekToken().Type == TokenType.DoubleEqual || // ==
                 PeekToken().Type == TokenType.ExclamationEqual || // !=
@@ -328,11 +459,12 @@ namespace Crispy.Parsing
                 PeekToken().Type == TokenType.GreaterThanOrEqual || // >=
                 PeekToken().Type == TokenType.LessThan || // <
                 PeekToken().Type == TokenType.LessThanOrEqual // <=
-            ) {
+            )
+            {
 
                 var t = PeekToken();
                 NextToken();
-                var right = ParseAdditiveExpression();
+                var right = ParseBitwiseOrExpression();
 
                 switch (t.Type)
                 {
@@ -364,7 +496,74 @@ namespace Crispy.Parsing
             return left;
         }
 
-        // +, -, & operators
+        // | operator
+        private NodeExpression ParseBitwiseOrExpression()
+        {
+            var left = ParseBitwiseXorExpression();
+            while (PeekToken().Type == TokenType.Bar)
+            {
+                NextToken();
+                var right = ParseBitwiseXorExpression();
+                left = new BinaryExpression(ExpressionType.Or, left, right);
+            }
+
+            return left;
+        }
+
+        // ^^ operator
+        private NodeExpression ParseBitwiseXorExpression()
+        {
+            var left = ParseBitwiseAndExpression();
+            while (PeekToken().Type == TokenType.DoubleCaret)
+            {
+                NextToken();
+                var right = ParseBitwiseAndExpression();
+                left = new BinaryExpression(ExpressionType.ExclusiveOr, left, right);
+            }
+
+            return left;
+        }
+
+        // & operator
+        private NodeExpression ParseBitwiseAndExpression()
+        {
+            var left = ParseShiftExpression();
+            while (PeekToken().Type == TokenType.Amphersand)
+            {
+                NextToken();
+                var right = ParseShiftExpression();
+                left = new BinaryExpression(ExpressionType.And, left, right);
+            }
+
+            return left;
+        }
+
+        // <<, >> operators
+        private NodeExpression ParseShiftExpression()
+        {
+            var left = ParseAdditiveExpression();
+            while (PeekToken().Type == TokenType.LeftShift || PeekToken().Type == TokenType.RightShift)
+            {
+                var t = PeekToken();
+                NextToken();
+                var right = ParseAdditiveExpression();
+                switch (t.Type)
+                {
+                    case TokenType.LeftShift:
+                        left = new BinaryExpression(ExpressionType.LeftShift, left, right);
+                        break;
+                    case TokenType.RightShift:
+                        left = new BinaryExpression(ExpressionType.RightShift, left, right);
+                        break;
+                    default:
+                        throw new ParserException(t.Value);
+                }
+            }
+
+            return left;
+        }
+
+        // +, - operators
         private NodeExpression ParseAdditiveExpression()
         {
             var left = ParseMultiplicativeExpression();
@@ -422,10 +621,16 @@ namespace Crispy.Parsing
         // -, !, not unary operators
         private NodeExpression ParseUnaryExpression()
         {
-            return ParsePostfixExpression();
+            return MaybeEatToken(TokenType.Minus)
+                ? new UnaryExpression(ExpressionType.Negate, ParseUnaryExpression())
+                : MaybeEatToken(TokenType.Tilde)
+                    ? new UnaryExpression(ExpressionType.OnesComplement, ParseUnaryExpression())
+                : MaybeEatToken(TokenType.Exclamation)
+                    ? new UnaryExpression(ExpressionType.Not, ParseUnaryExpression())
+                    : ParsePostfixExpression();
         }
 
-        private NodeExpression FinishAssignment(NodeExpression left)
+        private AssignmentExpression FinishAssignment(NodeExpression left)
         {
             EatToken(TokenType.Equal);
             var right = ParseExpression();
@@ -450,13 +655,31 @@ namespace Crispy.Parsing
                     return new ParentesizedExpression(expr);
 
                 case TokenType.NumberInteger:
-                    return new ConstantExpression(Int32.Parse(token.Value));
+                    return new ConstantExpression(int.Parse(token.Value, CultureInfo.InvariantCulture));
 
                 case TokenType.NumberFloat:
-                    return new ConstantExpression(Double.Parse(token.Value));
+                    return new ConstantExpression(double.Parse(token.Value, CultureInfo.InvariantCulture));
 
                 case TokenType.StringLiteral:
                     return new ConstantExpression(token.Value);
+
+                case TokenType.KeywordTrue:
+                    return new ConstantExpression(true);
+
+                case TokenType.KeywordFalse:
+                    return new ConstantExpression(false);
+
+                case TokenType.KeywordNull:
+                    return new ConstantExpression(null);
+
+                case TokenType.OpenBracket:
+                    return ParseListLiteral();
+
+                case TokenType.KeywordDict:
+                    return ParseDictionaryLiteral();
+
+                case TokenType.KeywordTry:
+                    return ParseTryStatement(true);
 
                 case TokenType.Identifier:
                     return new NamedExpression(token.Value);
@@ -472,6 +695,58 @@ namespace Crispy.Parsing
             }
         }
 
+        private ListLiteralExpression ParseListLiteral()
+        {
+            var elements = new List<NodeExpression>();
+            if (PeekToken().Type != TokenType.CloseBracket)
+            {
+                elements.Add(ParseExpression());
+                while (MaybeEatToken(TokenType.Comma))
+                {
+                    if (PeekToken().Type == TokenType.CloseBracket)
+                    {
+                        break;
+                    }
+
+                    elements.Add(ParseExpression());
+                }
+            }
+
+            EatToken(TokenType.CloseBracket);
+            return new ListLiteralExpression([.. elements]);
+        }
+
+        private DictionaryLiteralExpression ParseDictionaryLiteral()
+        {
+            EatToken(TokenType.OpenBracket);
+
+            var entries = new List<KeyValuePair<NodeExpression, NodeExpression>>();
+            if (PeekToken().Type != TokenType.CloseBracket)
+            {
+                entries.Add(ParseDictionaryEntry());
+                while (MaybeEatToken(TokenType.Comma))
+                {
+                    if (PeekToken().Type == TokenType.CloseBracket)
+                    {
+                        break;
+                    }
+
+                    entries.Add(ParseDictionaryEntry());
+                }
+            }
+
+            EatToken(TokenType.CloseBracket);
+            return new DictionaryLiteralExpression([.. entries]);
+        }
+
+        private KeyValuePair<NodeExpression, NodeExpression> ParseDictionaryEntry()
+        {
+            var key = ParseExpression();
+            EatToken(TokenType.Colon);
+            var value = ParseExpression();
+            return new KeyValuePair<NodeExpression, NodeExpression>(key, value);
+        }
+
         NodeExpression ParseMemberExpression(Boolean isNewExpression = false)
         {
             NodeExpression expression = ParsePrimaryExpression();
@@ -482,7 +757,7 @@ namespace Crispy.Parsing
             return expression;
         }
 
-        private NodeExpression ParseNew()
+        private NewExpression ParseNew()
         {
             NodeExpression constructor = ParseMemberExpression(true);
             EatToken(TokenType.OpenParen);
@@ -500,13 +775,23 @@ namespace Crispy.Parsing
                 arguments.Add(ParseExpression());
             }
 
-            return new NewExpression(constructor, arguments.ToArray());
+            return new NewExpression(constructor, [.. arguments]);
         }
 
-        private NodeExpression ParseLambda()
+        private LambdaExpression ParseLambda()
         {
             EatToken(TokenType.OpenParen);
-            var parameters = new List<string>();
+            var parameters = ParseCallableParameters();
+            var body = ParseStatement();
+
+            return new LambdaExpression(parameters, body);
+        }
+
+        private CallableParameter[] ParseCallableParameters()
+        {
+            var parameters = new List<CallableParameter>();
+            var sawDefaultValue = false;
+
             for (; ; )
             {
                 var close = PeekToken();
@@ -515,17 +800,36 @@ namespace Crispy.Parsing
                     NextToken();
                     break;
                 }
-                // Comma is optional
-                MaybeEatToken(TokenType.Comma);
 
-                string parameter = ParseId().Value;
-                //TODO add default values
-                parameters.Add(parameter);
+                // Comma is optional.
+                MaybeEatToken(TokenType.Comma);
+                if (PeekToken().Type == TokenType.CloseParen)
+                {
+                    NextToken();
+                    break;
+                }
+
+                if (PeekToken().Type == TokenType.Dot)
+                {
+                    throw new ParserException("Variadic parameters are not supported.");
+                }
+
+                var parameterName = ParseId().Value;
+                NodeExpression? defaultValue = null;
+                if (MaybeEatToken(TokenType.Equal))
+                {
+                    defaultValue = ParseExpression();
+                    sawDefaultValue = true;
+                }
+                else if (sawDefaultValue)
+                {
+                    throw new ParserException("Required parameters cannot follow optional parameters.");
+                }
+
+                parameters.Add(new CallableParameter(parameterName, defaultValue));
             }
 
-            var body = ParseStatement();
-
-            return new LambdaExpression(parameters.ToArray(), body);
+            return [.. parameters];
         }
 
         private NodeExpression FinishExpressionTerminal(NodeExpression expr)
@@ -533,6 +837,12 @@ namespace Crispy.Parsing
             for (; ; )
             {
                 Token tok = PeekToken();
+                if (_lastConsumedToken.LineNumber > 0 &&
+                    tok.LineNumber > _lastConsumedToken.LineNumber)
+                {
+                    return expr;
+                }
+
                 switch (tok.Type)
                 {
                     case TokenType.Dot:
@@ -550,20 +860,16 @@ namespace Crispy.Parsing
             }
         }
 
-        private NodeExpression ParseMember(NodeExpression expr, Boolean isNewExpression = false)
+        private MemberExpression ParseMember(NodeExpression expr, Boolean isNewExpression = false)
         {
             EatToken(TokenType.Dot);
             Token name = ParseId();
-
-            if (!isNewExpression && PeekToken().Type == TokenType.OpenParen)
-            {
-                return new MemberExpression(expr, name.Value, MemberType.MethodCall);
-            }
-
-            return new MemberExpression(expr, name.Value, MemberType.Member);
+            return !isNewExpression && PeekToken().Type == TokenType.OpenParen
+                ? new MemberExpression(expr, name.Value, MemberType.MethodCall)
+                : new MemberExpression(expr, name.Value, MemberType.Member);
         }
 
-        private NodeExpression FinishCall(NodeExpression target)
+        private FunctionCallExpression FinishCall(NodeExpression target)
         {
             EatToken(TokenType.OpenParen);
 
@@ -580,10 +886,10 @@ namespace Crispy.Parsing
 
             EatToken(TokenType.CloseParen);
 
-            return new FunctionCallExpression(target, args.ToArray());
+            return new FunctionCallExpression(target, [.. args]);
         }
 
-        private NodeExpression FinishIndex(NodeExpression target)
+        private IndexExpression FinishIndex(NodeExpression target)
         {
             EatToken(TokenType.OpenBracket);
             NodeExpression index = ParseExpression();

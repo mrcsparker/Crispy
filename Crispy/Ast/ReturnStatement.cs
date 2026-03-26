@@ -3,9 +3,9 @@ using Crispy.Helpers;
 
 namespace Crispy.Ast
 {
-    class ReturnStatement : NodeExpression
+    sealed class ReturnStatement : NodeExpression
     {
-        private readonly NodeExpression _returnExpression;
+        private readonly NodeExpression? _returnExpression;
 
         public ReturnStatement()
         {
@@ -18,14 +18,15 @@ namespace Crispy.Ast
 
         protected internal override Expression Eval(Context scope)
         {
-            scope.ReturnLabel = Expression.Label(typeof(object));
+            var callableScope = scope.CallableScope;
+            var returnLabel = callableScope.ReturnLabel ??= Expression.Label(typeof(object));
 
             if (_returnExpression != null)
             {
-                var ret = Expression.Return(scope.ReturnLabel, RuntimeHelpers.EnsureObjectResult(_returnExpression.Eval(scope)), typeof(object));
+                var ret = Expression.Return(returnLabel, RuntimeHelpers.EnsureObjectResult(_returnExpression.Eval(scope)), typeof(object));
                 return ret;
             }
-            return Expression.Return(scope.ReturnLabel, Expression.Constant(true));
+            return Expression.Return(returnLabel, Expression.Constant(true));
         }
     }
 }

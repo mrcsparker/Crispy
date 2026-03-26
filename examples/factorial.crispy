@@ -1,0 +1,13 @@
+// Recursive factorial.
+
+defun factorial(n) {
+    if (n <= 1) {
+        1
+    } else {
+        n * factorial(n - 1)
+    }
+}
+
+defun run() {
+    factorial(6)
+}

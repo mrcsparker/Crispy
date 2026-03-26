@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Linq;
 using System.Linq.Expressions;
 using Crispy.Parsing;
 using System.Dynamic;
@@ -11,26 +10,28 @@ using Crispy.Binders;
 
 namespace Crispy
 {
-    public class Crispy
+    public class CrispyRuntime
     {
+        private Assembly[] Assemblies { get; }
+        private readonly List<object> _instanceObjects = [];
 
-        private readonly Assembly[] _assemblies;
-        private readonly ExpandoObject _globals = new ExpandoObject();
-        private readonly List<object> _instanceObjects = new List<object>();
+        public ExpandoObject Globals { get; } = new ExpandoObject();
 
-        public Crispy(Assembly[] assms)
+        public CrispyRuntime(Assembly[] assms)
         {
-            _assemblies = assms;
+            ArgumentNullException.ThrowIfNull(assms);
+            Assemblies = assms;
             AddAssemblyNamesAndTypes();
         }
 
-        public Crispy(Assembly[] assms, object[] instanceObjects)
+        public CrispyRuntime(Assembly[] assms, object[] instanceObjects)
         {
-            _assemblies = assms;
-            //AddAssemblyNamesAndTypes();
-            _instanceObjects = instanceObjects.ToList();
+            ArgumentNullException.ThrowIfNull(assms);
+            ArgumentNullException.ThrowIfNull(instanceObjects);
+            Assemblies = assms;
+            AddAssemblyNamesAndTypes();
+            _instanceObjects = [.. instanceObjects];
             AddInstanceObjectNamesAndTypes();
-
         }
 
         // _addNamespacesAndTypes builds a tree of ExpandoObjects representing
@@ -40,17 +41,23 @@ namespace Crispy
         // to another language or library, where they may be looking for names
         // case-sensitively using EO's default lookup.
         //
-        public void AddAssemblyNamesAndTypes()
+        private void AddAssemblyNamesAndTypes()
         {
-            foreach (var assm in _assemblies)
+            foreach (var assm in Assemblies)
             {
                 foreach (var typ in assm.GetExportedTypes())
                 {
-                    string[] names = typ.FullName.Split('.');
-                    var table = _globals;
+                    var fullName = typ.FullName;
+                    if (fullName == null)
+                    {
+                        continue;
+                    }
+
+                    string[] names = fullName.Split('.');
+                    var table = Globals;
                     for (int i = 0; i < names.Length - 1; i++)
                     {
-                        string name = names[i].ToLower();
+                        string name = names[i];
                         if (DynamicObjectHelpers.HasMember(table, name))
                         {
                             // Must be Expando since only we have put objs in
@@ -69,17 +76,18 @@ namespace Crispy
             }
         }
 
-        public void AddInstanceObjectNamesAndTypes()
+        private void AddInstanceObjectNamesAndTypes()
         {
             foreach (var instanceObject in _instanceObjects)
             {
                 foreach (var methodName in instanceObject.GetType().GetMethods())
                 {
-                    var table = _globals;
+                    var table = Globals;
                     if (DynamicObjectHelpers.HasMember(table, instanceObject.GetType().Name))
                     {
                         table = (ExpandoObject)(DynamicObjectHelpers.GetMember(table, instanceObject.GetType().Name));
-                    } else
+                    }
+                    else
                     {
                         var tmp = new ExpandoObject();
                         DynamicObjectHelpers.SetMember(table, instanceObject.GetType().Name, tmp);
@@ -87,6 +95,7 @@ namespace Crispy
                     }
 
                     DynamicObjectHelpers.SetMember(table, methodName.Name, instanceObject);
+                    DynamicObjectHelpers.SetMember(Globals, methodName.Name, instanceObject);
                 }
             }
         }
@@ -97,16 +106,18 @@ namespace Crispy
         //
         public ExpandoObject ExecuteFile(string filename)
         {
+            ArgumentNullException.ThrowIfNull(filename);
             return ExecuteFile(filename, null);
         }
 
-        public ExpandoObject ExecuteFile(string filename, string globalVar)
+        public ExpandoObject ExecuteFile(string filename, string? globalVar)
         {
+            ArgumentNullException.ThrowIfNull(filename);
             var moduleNamespace = CreateNamespace();
             ExecuteFileInScope(filename, moduleNamespace);
 
             globalVar = globalVar ?? Path.GetFileNameWithoutExtension(filename);
-            DynamicObjectHelpers.SetMember(_globals, globalVar, moduleNamespace);
+            DynamicObjectHelpers.SetMember(Globals, globalVar, moduleNamespace);
 
             return moduleNamespace;
         }
@@ -117,40 +128,34 @@ namespace Crispy
         //
         public void ExecuteFileInScope(string filename, ExpandoObject moduleNamespace)
         {
-            var f = new StreamReader(filename);
+            ArgumentNullException.ThrowIfNull(filename);
+            ArgumentNullException.ThrowIfNull(moduleNamespace);
+            using var reader = new StreamReader(filename);
             // Simple way to convey script rundir for RuntimeHelpes.CrispyImport
             // to load .arity files.
             DynamicObjectHelpers.SetMember(moduleNamespace, "__file__", Path.GetFullPath(filename));
-            try
-            {
-                var asts = new Parser(new Tokenizer(f)).ParseFile();
-                var context = new Context(
-                    null,
-                    filename,
-                    this,
-                    Expression.Parameter(typeof(Crispy), "arityRuntime"),
-                    Expression.Parameter(typeof(ExpandoObject), "fileModule")
-                ) {
-                    InstanceObjects = _instanceObjects
-                };
+            SeedModuleNamespace(moduleNamespace);
+            var asts = new Parser(new Tokenizer(reader)).ParseFile();
+            var context = new Context(
+                null,
+                filename,
+                this,
+                Expression.Parameter(typeof(CrispyRuntime), "arityRuntime"),
+                Expression.Parameter(typeof(ExpandoObject), "fileModule"),
+                _instanceObjects);
 
-                var body = new List<Expression>();
-                foreach (var e in asts)
-                {
-                    body.Add(e.Eval(context));
-                }
-                var moduleFun = Expression.Lambda<Action<Crispy, ExpandoObject>>(
-                    MakeBody(context, body),
-                    context.RuntimeExpr,
-                    context.ModuleExpr
-                );
-                var d = moduleFun.Compile();
-                d(this, moduleNamespace);
-            }
-            finally
+            var body = new List<Expression>();
+            foreach (var e in asts)
             {
-                f.Close();
+                body.Add(e.Eval(context));
             }
+            var moduleFun = Expression.Lambda<Action<CrispyRuntime, ExpandoObject>>(
+                MakeBody(context, body),
+                context.RuntimeExpr,
+                context.ModuleExpr
+            );
+            var d = moduleFun.Compile();
+            d(this, moduleNamespace);
         }
 
         // Execute a single expression parsed from string in the provided module
@@ -158,24 +163,22 @@ namespace Crispy
         //
         public object ExecuteExpr(string text, ExpandoObject moduleNamespace)
         {
+            ArgumentNullException.ThrowIfNull(text);
+            ArgumentNullException.ThrowIfNull(moduleNamespace);
+            SeedModuleNamespace(moduleNamespace);
             var t = new Tokenizer(new StringReader(text));
             var ast = new Parser(t).Parse();
             var context = new Context(
                               null,
                               "__snippet__",
                               this,
-                              Expression.Parameter(typeof(Crispy), "arityRuntime"),
-                              Expression.Parameter(typeof(ExpandoObject), "fileModule")
-                          )
-            {
-                InstanceObjects = _instanceObjects
-            };
+                              Expression.Parameter(typeof(CrispyRuntime), "arityRuntime"),
+                              Expression.Parameter(typeof(ExpandoObject), "fileModule"),
+                              _instanceObjects);
 
-            List<Expression> body = new List<Expression>();
+            List<Expression> body = [Expression.Convert(ast.Eval(context), typeof(object))];
 
-            body.Add(Expression.Convert(ast.Eval(context), typeof(object)));
-
-            var moduleFunction = Expression.Lambda<Func<Crispy, ExpandoObject, object>>(
+            var moduleFunction = Expression.Lambda<Func<CrispyRuntime, ExpandoObject, object>>(
                 MakeBody(context, body),
                 context.RuntimeExpr,
                 context.ModuleExpr
@@ -184,21 +187,27 @@ namespace Crispy
             return d(this, moduleNamespace);
         }
 
-        private static Expression MakeBody(Context context, IEnumerable<Expression> body)
+        private void SeedModuleNamespace(ExpandoObject moduleNamespace)
         {
-            if (context.Variables.Count > 0)
+            var module = (IDictionary<string, object?>)moduleNamespace;
+            foreach (var entry in (IDictionary<string, object?>)Globals)
             {
-                return Expression.Block(
-                    context.Variables.Select(name => name.Value).ToArray(),
-                    body
-                );
+                if (!module.ContainsKey(entry.Key))
+                {
+                    module[entry.Key] = entry.Value;
+                }
             }
-            return Expression.Block(body);
         }
 
-
-        public ExpandoObject Globals { get { return _globals; } }
-
+        private static BlockExpression MakeBody(Context context, IEnumerable<Expression> body)
+        {
+            return context.Variables.Count > 0
+                ? Expression.Block(
+                    [.. context.Variables.Values],
+                    body
+                )
+                : Expression.Block(body);
+        }
         public static ExpandoObject CreateNamespace()
         {
             return new ExpandoObject();
@@ -218,9 +227,9 @@ namespace Crispy
         // it again.  For this to work, we need to place the same binder instance
         // on those functionally equivalent call sites.
 
-        private readonly Dictionary<string, CrispyGetMemberBinder> _getMemberBinders = new Dictionary<string, CrispyGetMemberBinder>();
+        private readonly Dictionary<string, CrispyGetMemberBinder> _getMemberBinders = [];
 
-        public CrispyGetMemberBinder GetGetMemberBinder(string name)
+        internal CrispyGetMemberBinder GetGetMemberBinder(string name)
         {
             lock (_getMemberBinders)
             {
@@ -228,17 +237,17 @@ namespace Crispy
                 // in case some DynamicMetaObject ignores ignoreCase.  This makes
                 // some interop cases work, but the cost is that if a Crispy program
                 // spells ".foo" and ".Foo" at different sites, they won't share rules.
-                if (_getMemberBinders.ContainsKey(name))
-                    return _getMemberBinders[name];
-                var b = new CrispyGetMemberBinder(name);
-                _getMemberBinders[name] = b;
-                return b;
+                if (_getMemberBinders.TryGetValue(name, out var binder))
+                    return binder;
+                binder = new CrispyGetMemberBinder(name);
+                _getMemberBinders[name] = binder;
+                return binder;
             }
         }
 
-        private readonly Dictionary<string, CrispySetMemberBinder> _setMemberBinders = new Dictionary<string, CrispySetMemberBinder>();
+        private readonly Dictionary<string, CrispySetMemberBinder> _setMemberBinders = [];
 
-        public CrispySetMemberBinder GetSetMemberBinder(string name)
+        internal CrispySetMemberBinder GetSetMemberBinder(string name)
         {
             lock (_setMemberBinders)
             {
@@ -246,81 +255,82 @@ namespace Crispy
                 // in case some DynamicMetaObject ignores ignoreCase.  This makes
                 // some interop cases work, but the cost is that if a Crispy program
                 // spells ".foo" and ".Foo" at different sites, they won't share rules.
-                if (_setMemberBinders.ContainsKey(name))
-                    return _setMemberBinders[name];
-                var b = new CrispySetMemberBinder(name);
-                _setMemberBinders[name] = b;
-                return b;
+                if (_setMemberBinders.TryGetValue(name, out var binder))
+                    return binder;
+                binder = new CrispySetMemberBinder(name);
+                _setMemberBinders[name] = binder;
+                return binder;
             }
         }
 
-        private readonly Dictionary<CallInfo, CrispyInvokeBinder> _invokeBinders = new Dictionary<CallInfo, CrispyInvokeBinder>();
+        private readonly Dictionary<CallInfo, CrispyInvokeBinder> _invokeBinders = [];
 
-        public CrispyInvokeBinder GetInvokeBinder(CallInfo info)
+        internal CrispyInvokeBinder GetInvokeBinder(CallInfo info)
         {
             lock (_invokeBinders)
             {
-                if (_invokeBinders.ContainsKey(info))
-                    return _invokeBinders[info];
-                var b = new CrispyInvokeBinder(info);
-                _invokeBinders[info] = b;
-                return b;
+                if (_invokeBinders.TryGetValue(info, out var binder))
+                    return binder;
+                binder = new CrispyInvokeBinder(info);
+                _invokeBinders[info] = binder;
+                return binder;
             }
         }
 
-        private readonly Dictionary<InvokeMemberBinderKey, CrispyInvokeMemberBinder> _invokeMemberBinders = new Dictionary<InvokeMemberBinderKey, CrispyInvokeMemberBinder>();
+        private readonly Dictionary<InvokeMemberBinderKey, CrispyInvokeMemberBinder> _invokeMemberBinders = [];
 
-        public CrispyInvokeMemberBinder GetInvokeMemberBinder(InvokeMemberBinderKey info)
+        internal CrispyInvokeMemberBinder GetInvokeMemberBinder(InvokeMemberBinderKey info)
         {
+            ArgumentNullException.ThrowIfNull(info);
             lock (_invokeMemberBinders)
             {
-                if (_invokeMemberBinders.ContainsKey(info))
-                    return _invokeMemberBinders[info];
-                var b = new CrispyInvokeMemberBinder(info.Name, info.Info);
-                _invokeMemberBinders[info] = b;
-                return b;
+                if (_invokeMemberBinders.TryGetValue(info, out var binder))
+                    return binder;
+                binder = new CrispyInvokeMemberBinder(info.Name, info.Info);
+                _invokeMemberBinders[info] = binder;
+                return binder;
             }
         }
 
-        private readonly Dictionary<CallInfo, CrispyCreateInstanceBinder> _createInstanceBinders = new Dictionary<CallInfo, CrispyCreateInstanceBinder>();
+        private readonly Dictionary<CallInfo, CrispyCreateInstanceBinder> _createInstanceBinders = [];
 
-        public CrispyCreateInstanceBinder GetCreateInstanceBinder(CallInfo info)
+        internal CrispyCreateInstanceBinder GetCreateInstanceBinder(CallInfo info)
         {
             lock (_createInstanceBinders)
             {
-                if (_createInstanceBinders.ContainsKey(info))
-                    return _createInstanceBinders[info];
-                var b = new CrispyCreateInstanceBinder(info);
-                _createInstanceBinders[info] = b;
-                return b;
+                if (_createInstanceBinders.TryGetValue(info, out var binder))
+                    return binder;
+                binder = new CrispyCreateInstanceBinder(info);
+                _createInstanceBinders[info] = binder;
+                return binder;
             }
         }
 
-        private readonly Dictionary<ExpressionType, CrispyBinaryOperationBinder> _binaryOperationBinders = new Dictionary<ExpressionType, CrispyBinaryOperationBinder>();
+        private readonly Dictionary<ExpressionType, CrispyBinaryOperationBinder> _binaryOperationBinders = [];
 
-        public CrispyBinaryOperationBinder GetBinaryOperationBinder(ExpressionType op)
+        internal CrispyBinaryOperationBinder GetBinaryOperationBinder(ExpressionType op)
         {
             lock (_binaryOperationBinders)
             {
-                if (_binaryOperationBinders.ContainsKey(op))
-                    return _binaryOperationBinders[op];
-                var b = new CrispyBinaryOperationBinder(op);
-                _binaryOperationBinders[op] = b;
-                return b;
+                if (_binaryOperationBinders.TryGetValue(op, out var binder))
+                    return binder;
+                binder = new CrispyBinaryOperationBinder(op);
+                _binaryOperationBinders[op] = binder;
+                return binder;
             }
         }
 
-        private readonly Dictionary<ExpressionType, CrispyUnaryOperationBinder> _unaryOperationBinders = new Dictionary<ExpressionType, CrispyUnaryOperationBinder>();
+        private readonly Dictionary<ExpressionType, CrispyUnaryOperationBinder> _unaryOperationBinders = [];
 
-        public CrispyUnaryOperationBinder GetUnaryOperationBinder(ExpressionType op)
+        internal CrispyUnaryOperationBinder GetUnaryOperationBinder(ExpressionType op)
         {
             lock (_unaryOperationBinders)
             {
-                if (_unaryOperationBinders.ContainsKey(op))
-                    return _unaryOperationBinders[op];
-                var b = new CrispyUnaryOperationBinder(op);
-                _unaryOperationBinders[op] = b;
-                return b;
+                if (_unaryOperationBinders.TryGetValue(op, out var binder))
+                    return binder;
+                binder = new CrispyUnaryOperationBinder(op);
+                _unaryOperationBinders[op] = binder;
+                return binder;
             }
         }
     }
