@@ -1,30 +1,30 @@
 namespace Crispy.Tests.Data
 {
-    public class MetricsModel
+    internal sealed class MetricsModel
     {
         public double Id { get; set; }
-        public string Name { get; set; }
+        public string? Name { get; set; }
         public double Sales { get; set; }
         public double Volume { get; set; }
         public double Margin { get; set; }
         public double Profit { get; set; }
 
-        public double GetSalesVolume()
+        public double SalesVolume()
         {
-            return Sales*Volume;
+            return Sales * Volume;
         }
 
-        public double GetSales()
+        public double ReadSales()
         {
             return Sales;
         }
 
-        public double GetVolume()
+        public double ReadVolume()
         {
             return Volume;
         }
 
-        public double GetProfit()
+        public double ReadProfit()
         {
             return Profit;
         }

@@ -1,0 +1,12 @@
+defun run() {
+    var values = [1, 2, 3]
+    var basket = dict[
+        'bonus': 4,
+        'weights': [10, 20]
+    ]
+
+    values.Add(basket['bonus'])
+    basket['weights'][1] = basket['weights'][1] + values[3]
+
+    values[0] + values[1] + values[2] + values[3] + basket['weights'][1]
+}

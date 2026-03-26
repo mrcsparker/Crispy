@@ -1,0 +1,37 @@
+// FizzBuzz from 1 to 20.
+
+defun fizzBuzzValue(number) {
+    if ((number % 15) == 0) {
+        return 'FizzBuzz'
+    }
+
+    if ((number % 3) == 0) {
+        return 'Fizz'
+    }
+
+    if ((number % 5) == 0) {
+        return 'Buzz'
+    }
+
+    number.ToString()
+}
+
+defun run() {
+    var index = 1
+    var builder = new system.text.StringBuilder()
+
+    loop {
+        if (index > 20) {
+            break
+        }
+
+        if (index > 1) {
+            builder.Append(', ')
+        }
+
+        builder.Append(fizzBuzzValue(index))
+        index = index + 1
+    }
+
+    builder.ToString()
+}

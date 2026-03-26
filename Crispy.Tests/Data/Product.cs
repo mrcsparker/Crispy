@@ -1,21 +1,21 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
 namespace Crispy.Tests.Data
 {
-    internal class Product
+    internal sealed class Product
     {
-        private readonly StringBuilder _output = new StringBuilder();
-        public String Name { get; set; }
+        private readonly StringBuilder _output = new();
+        public String Name { get; set; } = string.Empty;
         public Double Price { get; set; }
         public Double Volume { get; set; }
-        public List<Product> Products { get; set; }
+        public List<Product> Products { get; set; } = [];
 
-        public string LowerCaseName()
+        public string UpperCaseName()
         {
-            return Name.ToLower();
+            return Name.ToUpperInvariant();
         }
 
         public bool Top3Price()
@@ -26,7 +26,7 @@ namespace Crispy.Tests.Data
             return topNumbers.Contains(this);
         }
 
-        public bool Top3Volume(double number, string attribute)
+        public bool Top3Volume()
         {
             IEnumerable<Product> topNumbers =
                 Products.OrderByDescending(c => c.Volume).Take(3);

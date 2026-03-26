@@ -1,39 +1,27 @@
-﻿
+
 using System.Linq.Expressions;
 
 namespace Crispy.Ast
 {
-    class VarStatement : NodeExpression
+    sealed class VarStatement : NodeExpression
     {
-        private readonly string _name;
-        private readonly NodeExpression _value;
         private static readonly DefaultExpression VoidInstance = Expression.Empty();
 
-        public VarStatement(string name, NodeExpression value)
+        public override string Name { get; }
+        public NodeExpression? Value { get; }
+
+        public VarStatement(string name, NodeExpression? value)
         {
-            _name = name;
-            _value = value;
+            Name = name;
+            Value = value;
         }
 
         protected internal override Expression Eval(Context scope)
         {
-            var variable = scope.GetOrMakeLocal(_name);
-
-            if (_value != null)
-            {
-                return Expression.Assign(variable, Expression.Convert(_value.Eval(scope), variable.Type));
-            }
-
-            return VoidInstance;
-        }
-
-        public override string Name {
-            get { return _name; }
-        }
-
-        public NodeExpression Value
-        {
-            get { return _value; }
+            var variable = scope.GetOrMakeLocal(Name);
+            return Value != null
+                ? Expression.Assign(variable, Expression.Convert(Value.Eval(scope), variable.Type))
+                : VoidInstance;
         }
     }
 }

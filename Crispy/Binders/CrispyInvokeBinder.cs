@@ -1,8 +1,9 @@
-﻿using System;
+using System;
 using System.Dynamic;
-using Crispy.Helpers;
-using System.Linq.Expressions;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
+using Crispy.Helpers;
 
 namespace Crispy.Binders
 {
@@ -14,33 +15,60 @@ namespace Crispy.Binders
     /// <remarks>
     /// This is much like Ruby method_missing
     /// </remarks>
-    public class CrispyInvokeBinder : InvokeBinder {
-        public CrispyInvokeBinder(CallInfo callinfo) : base(callinfo) {
+    internal sealed class CrispyInvokeBinder : InvokeBinder
+    {
+        private static readonly MethodInfo CrispyCallableInvokeMethod =
+            typeof(CrispyCallable).GetMethod(nameof(CrispyCallable.Invoke), [typeof(object[])]) ??
+            throw new InvalidOperationException("CrispyCallable.Invoke method was not found.");
+
+        public CrispyInvokeBinder(CallInfo callinfo) : base(callinfo)
+        {
         }
 
         public override DynamicMetaObject FallbackInvoke(
             DynamicMetaObject target, DynamicMetaObject[] args,
-            DynamicMetaObject errorSuggestion) {
+            DynamicMetaObject? errorSuggestion)
+        {
 
             // Defer if any object has no value so that we evaulate their
             // Expressions and nest a CallSite for the InvokeMember.
-            if (!target.HasValue || args.Any(a => !a.HasValue)) {
+            if (!target.HasValue || args.Any(a => !a.HasValue))
+            {
                 return Defer(target, args);
             }
             // Find our own binding.
-            if (target.LimitType.IsSubclassOf(typeof(Delegate))) {
-                var parms = target.LimitType.GetMethod("Invoke").GetParameters();
-                if (parms.Length == args.Length) {
-                    // Don't need to check if argument types match parameters.
-                    // If they don't, users get an argument conversion error.
-                    var callArgs = RuntimeHelpers.ConvertArguments(args, parms);
-                    var expression = Expression.Invoke(
-                        Expression.Convert(target.Expression, target.LimitType),
-                        callArgs);
-                    return new DynamicMetaObject(
-                        RuntimeHelpers.EnsureObjectResult(expression),
-                        BindingRestrictions.GetTypeRestriction(target.Expression,
-                            target.LimitType));
+            if (typeof(CrispyCallable).IsAssignableFrom(target.LimitType))
+            {
+                var invokeExpression = Expression.Call(
+                    Expression.Convert(target.Expression, typeof(CrispyCallable)),
+                    CrispyCallableInvokeMethod,
+                    Expression.NewArrayInit(typeof(object), args.Select(arg => RuntimeHelpers.EnsureObjectResult(arg.Expression))));
+                return new DynamicMetaObject(
+                    RuntimeHelpers.EnsureObjectResult(invokeExpression),
+                    target.Restrictions
+                        .Merge(BindingRestrictions.Combine(args))
+                        .Merge(BindingRestrictions.GetTypeRestriction(target.Expression, target.LimitType)));
+            }
+
+            if (target.LimitType.IsSubclassOf(typeof(Delegate)))
+            {
+                var invokeMethod = target.LimitType.GetMethod("Invoke");
+                if (invokeMethod != null)
+                {
+                    var parms = invokeMethod.GetParameters();
+                    if (parms.Length == args.Length)
+                    {
+                        // Don't need to check if argument types match parameters.
+                        // If they don't, users get an argument conversion error.
+                        var callArgs = RuntimeHelpers.ConvertArguments(args, parms);
+                        var expression = Expression.Invoke(
+                            Expression.Convert(target.Expression, target.LimitType),
+                            callArgs);
+                        return new DynamicMetaObject(
+                            RuntimeHelpers.EnsureObjectResult(expression),
+                            BindingRestrictions.GetTypeRestriction(target.Expression,
+                                target.LimitType));
+                    }
                 }
             }
             return errorSuggestion ??
@@ -55,4 +83,3 @@ namespace Crispy.Binders
         }
     }
 }
-

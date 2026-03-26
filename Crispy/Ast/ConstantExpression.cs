@@ -1,24 +1,19 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 
 namespace Crispy.Ast
 {
-    class ConstantExpression : NodeExpression
+    sealed class ConstantExpression : NodeExpression
     {
-        private readonly object _value;
+        public object? Value { get; }
 
-        public ConstantExpression(object value)
+        public ConstantExpression(object? value)
         {
-            _value = value;
-        }
-
-        public object Value
-        {
-            get { return _value; }
+            Value = value;
         }
 
         protected internal override Expression Eval(Context scope)
         {
-            return Expression.Constant(_value, typeof(object));
+            return Expression.Constant(Value, typeof(object));
         }
     }
 }

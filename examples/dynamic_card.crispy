@@ -1,0 +1,37 @@
+// DLR-style dynamic objects with nested ExpandoObject state and function members.
+
+import text_tools as text
+
+defun makeCard(title) {
+    var card = new system.dynamic.ExpandoObject()
+    card.Title = title
+    card.Meta = new system.dynamic.ExpandoObject()
+    card.Meta.Author = 'Crispy'
+    card.Tags = new system.collections.ArrayList()
+
+    card.AddTag = lambda(tag) {
+        card.Tags.Add(tag)
+        card
+    }
+
+    card.Render = lambda() {
+        var builder = new system.text.StringBuilder()
+        builder.Append(text.bracket(card.Title))
+        builder.Append(' by ')
+        builder.Append(card.Meta.Author)
+        builder.Append(': ')
+        builder.Append(card.Tags[0])
+        builder.Append(', ')
+        builder.Append(card.Tags[1])
+        builder.ToString()
+    }
+
+    card
+}
+
+defun run() {
+    var card = makeCard('DLR')
+    card.AddTag('dynamic')
+    card.AddTag('closures')
+    card.Render()
+}

@@ -11,8 +11,8 @@ namespace Crispy.Parsing
     /// </summary>
     public class Tokenizer
     {
-        private static readonly Dictionary<string, TokenType> Keywords = new Dictionary<string, TokenType>
-            {
+        private static readonly Dictionary<string, TokenType> Keywords = new()
+        {
                 {"if", TokenType.KeywordIf},
                 {"then", TokenType.KeywordThen},
                 {"else", TokenType.KeywordElse},
@@ -23,21 +23,33 @@ namespace Crispy.Parsing
                 {"or", TokenType.DoubleBar},
                 {"and", TokenType.DoubleAmphersand},
                 {"eq", TokenType.DoubleEqual},
+                {"not", TokenType.Exclamation},
+                {"mod", TokenType.Percent},
+                {"xor", TokenType.DoubleCaret},
                 {"true", TokenType.KeywordTrue},
                 {"false", TokenType.KeywordFalse},
+                {"null", TokenType.KeywordNull},
+                {"dict", TokenType.KeywordDict},
+                {"try", TokenType.KeywordTry},
+                {"catch", TokenType.KeywordCatch},
+                {"finally", TokenType.KeywordFinally},
+                {"throw", TokenType.KeywordThrow},
                 {"function", TokenType.KeywordFunction},
                 {"defun", TokenType.KeywordFunction},
                 {"lambda", TokenType.KeywordLambda},
                 {"return", TokenType.KeywordReturn},
                 {"break", TokenType.KeywordBreak},
+                {"continue", TokenType.KeywordContinue},
+                {"foreach", TokenType.KeywordForeach},
+                {"in", TokenType.KeywordIn},
                 {"loop", TokenType.KeywordLoop},
                 {"import", TokenType.KeywordImport},
                 {"as", TokenType.KeywordAs},
                 {"new", TokenType.KeywordNew}
             };
 
-        private static readonly Dictionary<string, TokenType> Operators = new Dictionary<string, TokenType>
-            {
+        private static readonly Dictionary<string, TokenType> Operators = new()
+        {
                 {"!", TokenType.Exclamation},
                 {"!=", TokenType.ExclamationEqual},
                 {"%", TokenType.Percent},
@@ -75,11 +87,10 @@ namespace Crispy.Parsing
                 {"]", TokenType.CloseBracket}
             };
 
-        private static readonly string SingleOps = MakeSingleOps();
-        private static readonly string PrefixOps = MakePrefixOps();
-        private static readonly string SuffixOps = MakeSuffixOps();
+        private static readonly HashSet<char> SingleOps = MakeSingleOps();
+        private static readonly HashSet<char> PrefixOps = MakePrefixOps();
+        private static readonly HashSet<char> SuffixOps = MakeSuffixOps();
         private readonly PositionalTextReader _reader;
-        private char _currentChar;
 
         /// <summary>
         ///     Creates a positional text reader from
@@ -88,6 +99,7 @@ namespace Crispy.Parsing
         /// <param name="text">Text to be read</param>
         public Tokenizer(TextReader text)
         {
+            ArgumentNullException.ThrowIfNull(text);
             _reader = new PositionalTextReader(text, text.GetType().Name);
             NextChar();
         }
@@ -112,49 +124,36 @@ namespace Crispy.Parsing
                 SkipComment();
                 return NextToken();
             }
-
-            if (IsIdentifier())
-            {
-                return MakeIdentifier();
-            }
-
-            if (IsNumber())
-            {
-                return MakeNumber();
-            }
-
-            if (IsString())
-            {
-                return MakeString();
-            }
-
-            if (IsCombinedOperator())
-            {
-                return MakeCombinedOperator();
-            }
-
-            if (IsOperator())
-            {
-                return MakeOperator();
-            }
-
-            if (CurrentReaderValue == -1)
-            {
-                return MakeToken(TokenType.End, "");
-            }
-
-            throw TokenizerException(string.Format("Could not parse character: {0}", _currentChar));
+            return IsIdentifier()
+                ? MakeIdentifier()
+                : IsNumber()
+                    ? MakeNumber()
+                    : IsString()
+                        ? MakeString()
+                        : IsCombinedOperator()
+                            ? MakeCombinedOperator()
+                            : IsOperator()
+                                ? MakeOperator()
+                                : CurrentReaderValue == -1
+                                    ? MakeToken(TokenType.End, "")
+                                    : throw TokenizerException(
+                                        string.Format(
+                                            CultureInfo.InvariantCulture,
+                                            "Could not parse character: {0}",
+                                            CurrentChar));
         }
 
         private void IgnoreWhiteSpace()
         {
-            while (char.IsWhiteSpace(_currentChar))
+            while (char.IsWhiteSpace(CurrentChar))
+            {
                 NextChar();
+            }
         }
 
         private bool IsIdentifier()
         {
-            return char.IsLetter(_currentChar) || _currentChar == '@' || _currentChar == '_';
+            return char.IsLetter(CurrentChar) || CurrentChar == '@' || CurrentChar == '_';
         }
 
         private Token MakeIdentifier()
@@ -163,38 +162,36 @@ namespace Crispy.Parsing
 
             do
             {
-                identifierStr.Append(_currentChar);
+                identifierStr.Append(CurrentChar);
                 NextChar();
-            } while (Char.IsLetterOrDigit(_currentChar) || _currentChar == '_');
+            } while (Char.IsLetterOrDigit(CurrentChar) || CurrentChar == '_');
 
             string ident = identifierStr.ToString();
-            if (Keywords.ContainsKey(ident))
-            {
-                return MakeToken(Keywords[ident], ident);
-            }
-            return MakeToken(TokenType.Identifier, ident);
+            return Keywords.TryGetValue(ident, out var tokenType)
+                ? MakeToken(tokenType, ident)
+                : MakeToken(TokenType.Identifier, ident);
         }
 
         private bool IsString()
         {
-            return _currentChar == '"' || _currentChar == '\'';
+            return CurrentChar == '"' || CurrentChar == '\'';
         }
 
         private Token MakeString()
         {
             var str = new StringBuilder();
 
-            char quote = _currentChar;
+            char quote = CurrentChar;
 
             NextChar();
 
-            while ((_currentChar != quote) && CurrentReaderValue != -1)
+            while ((CurrentChar != quote) && CurrentReaderValue != -1)
             {
-                str.Append(_currentChar);
+                str.Append(CurrentChar);
                 NextChar();
             }
 
-            if (_currentChar != quote)
+            if (CurrentChar != quote)
             {
                 throw TokenizerException("Quoted string was not terminated");
             }
@@ -206,7 +203,7 @@ namespace Crispy.Parsing
 
         private bool IsNumber()
         {
-            return char.IsNumber(_currentChar);
+            return char.IsNumber(CurrentChar);
         }
 
         /// <summary>
@@ -254,46 +251,46 @@ namespace Crispy.Parsing
 
             do
             {
-                numberStr.Append(_currentChar);
+                numberStr.Append(CurrentChar);
                 NextChar();
-            } while (Char.IsDigit(_currentChar));
+            } while (Char.IsDigit(CurrentChar));
 
-            if (_currentChar == '.')
+            if (CurrentChar == '.')
             {
                 numberType = TokenType.NumberFloat;
-                numberStr.Append(_currentChar);
+                numberStr.Append(CurrentChar);
                 NextChar();
 
                 do
                 {
-                    numberStr.Append(_currentChar);
+                    numberStr.Append(CurrentChar);
                     NextChar();
-                } while (Char.IsDigit(_currentChar));
+                } while (Char.IsDigit(CurrentChar));
             }
 
-            if (_currentChar == 'E' || _currentChar == 'e')
+            if (CurrentChar == 'E' || CurrentChar == 'e')
             {
                 numberType = TokenType.NumberFloat;
-                numberStr.Append(_currentChar);
+                numberStr.Append(CurrentChar);
                 NextChar();
 
-                if (_currentChar == '+' || _currentChar == '-')
+                if (CurrentChar == '+' || CurrentChar == '-')
                 {
-                    numberStr.Append(_currentChar);
+                    numberStr.Append(CurrentChar);
                     NextChar();
                 }
 
                 do
                 {
-                    numberStr.Append(_currentChar);
+                    numberStr.Append(CurrentChar);
                     NextChar();
-                } while (Char.IsDigit(_currentChar));
+                } while (Char.IsDigit(CurrentChar));
             }
 
-            if (_currentChar == 'F' || _currentChar == 'f')
+            if (CurrentChar == 'F' || CurrentChar == 'f')
             {
                 numberType = TokenType.NumberFloat;
-                numberStr.Append(_currentChar);
+                numberStr.Append(CurrentChar);
                 NextChar();
             }
 
@@ -303,7 +300,7 @@ namespace Crispy.Parsing
         private bool IsComment()
         {
             var nextChar = (char)_reader.Peek();
-            return _currentChar == '/' && nextChar == '/';
+            return CurrentChar == '/' && nextChar == '/';
         }
 
         private void SkipComment()
@@ -311,8 +308,11 @@ namespace Crispy.Parsing
             NextChar();
             for (; ; )
             {
-                if (_currentChar == '\n' || _currentChar == '\r')
+                if (CurrentChar == '\n' || CurrentChar == '\r')
+                {
                     break;
+                }
+
                 NextChar();
             }
             NextChar();
@@ -320,23 +320,23 @@ namespace Crispy.Parsing
 
         private bool IsCombinedOperator()
         {
-            return PrefixOps.IndexOf(_currentChar) >= 0 &&
-                   SuffixOps.IndexOf((char)_reader.Peek()) >= 0;
+            return PrefixOps.Contains(CurrentChar) &&
+                   SuffixOps.Contains((char)_reader.Peek());
         }
 
         private Token MakeCombinedOperator()
         {
             var str = new StringBuilder();
-            str.Append(_currentChar);
+            str.Append(CurrentChar);
             NextChar();
 
             while (true)
             {
-                if (SuffixOps.IndexOf(_currentChar) < 0)
+                if (!SuffixOps.Contains(CurrentChar))
                 {
                     break;
                 }
-                str.Append(_currentChar);
+                str.Append(CurrentChar);
                 NextChar();
             }
 
@@ -345,13 +345,13 @@ namespace Crispy.Parsing
 
         private bool IsOperator()
         {
-            return SingleOps.IndexOf(_currentChar) >= 0;
+            return SingleOps.Contains(CurrentChar);
         }
 
         private Token MakeOperator()
         {
-            Token t = MakeToken(Operators[_currentChar.ToString(CultureInfo.InvariantCulture)],
-                                _currentChar.ToString(CultureInfo.InvariantCulture));
+            Token t = MakeToken(Operators[CurrentChar.ToString(CultureInfo.InvariantCulture)],
+                                CurrentChar.ToString(CultureInfo.InvariantCulture));
             NextChar();
             return t;
         }
@@ -359,17 +359,14 @@ namespace Crispy.Parsing
         private void NextChar()
         {
             CurrentReaderValue = _reader.Read();
-            _currentChar = (char)CurrentReaderValue;
+            CurrentChar = (char)CurrentReaderValue;
         }
 
-        public char CurrentChar
-        {
-            get { return _currentChar; }
-        }
+        public char CurrentChar { get; private set; }
 
-        private Token MakeToken(TokenType type, string value = null)
+        private Token MakeToken(TokenType type, string? value = null)
         {
-            string tokenValue = value ?? _currentChar.ToString(CultureInfo.InvariantCulture);
+            string tokenValue = value ?? CurrentChar.ToString(CultureInfo.InvariantCulture);
 
             return new Token(type, tokenValue, _reader.LineNumber, _reader.ColumnNumber);
         }
@@ -379,48 +376,48 @@ namespace Crispy.Parsing
             return new TokenizerException(msg, _reader);
         }
 
-        private static string MakeSingleOps()
+        private static HashSet<char> MakeSingleOps()
         {
-            var str = new StringBuilder();
+            var chars = new HashSet<char>();
 
             foreach (var op in Operators)
             {
                 if (op.Key.Length == 1)
                 {
-                    str.Append(op.Key);
+                    chars.Add(op.Key[0]);
                 }
             }
 
-            return str.ToString();
+            return chars;
         }
 
-        private static string MakePrefixOps()
+        private static HashSet<char> MakePrefixOps()
         {
-            var str = new StringBuilder();
+            var chars = new HashSet<char>();
 
             foreach (var op in Operators)
             {
                 if (op.Key.Length == 2)
                 {
-                    str.Append(op.Key[0]);
+                    chars.Add(op.Key[0]);
                 }
             }
 
-            return str.ToString();
+            return chars;
         }
 
-        private static string MakeSuffixOps()
+        private static HashSet<char> MakeSuffixOps()
         {
-            var str = new StringBuilder();
+            var chars = new HashSet<char>();
 
             foreach (var op in Operators)
             {
                 if (op.Key.Length == 2)
                 {
-                    str.Append(op.Key[1]);
+                    chars.Add(op.Key[1]);
                 }
             }
-            return str.ToString();
+            return chars;
         }
     }
 }

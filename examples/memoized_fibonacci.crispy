@@ -1,0 +1,26 @@
+// Memoized recursion backed by a captured .NET Hashtable.
+
+import system.collections as collections
+
+defun makeMemoizedFibonacci() {
+    var cache = new collections.Hashtable()
+    cache[0] = 0
+    cache[1] = 1
+
+    defun fib(n) {
+        if (cache.ContainsKey(n)) {
+            cache[n]
+        } else {
+            var value = fib(n - 1) + fib(n - 2)
+            cache[n] = value
+            value
+        }
+    }
+
+    fib
+}
+
+defun run() {
+    var fib = makeMemoizedFibonacci()
+    fib(12)
+}

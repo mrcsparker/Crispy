@@ -1,0 +1,18 @@
+// Imports can be local to a function and captured by closures.
+
+defun makeFormatter(prefix) {
+    import text_tools as text
+
+    lambda(value) {
+        var builder = new system.text.StringBuilder()
+        builder.Append(text.bracket(prefix))
+        builder.Append(' -> ')
+        builder.Append(text.bracket(value))
+        builder.ToString()
+    }
+}
+
+defun run() {
+    var format = makeFormatter('scoped')
+    format('imports')
+}

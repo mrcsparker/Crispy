@@ -1,0 +1,43 @@
+// DLR-backed object-style APIs built from closures and ExpandoObject.
+
+defun makeScoreboard(name) {
+    var state = new system.dynamic.ExpandoObject()
+    state.Name = name
+    state.Points = 0
+    state.Wins = 0
+
+    defun award(points) {
+        state.Points = state.Points + points
+        state.Points
+    }
+
+    defun win() {
+        state.Wins = state.Wins + 1
+        state.Wins
+    }
+
+    defun summary() {
+        var builder = new system.text.StringBuilder()
+        builder.Append(state.Name)
+        builder.Append(': ')
+        builder.Append(state.Points)
+        builder.Append(' points, ')
+        builder.Append(state.Wins)
+        builder.Append(' wins')
+        builder.ToString()
+    }
+
+    var api = new system.dynamic.ExpandoObject()
+    api.Award = award
+    api.Win = win
+    api.Summary = summary
+    api
+}
+
+defun run() {
+    var team = makeScoreboard('Crispy')
+    team.Award(7)
+    team.Win()
+    team.Award(3)
+    team.Summary()
+}

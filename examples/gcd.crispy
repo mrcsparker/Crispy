@@ -1,0 +1,19 @@
+// Euclid's algorithm for the greatest common divisor.
+
+defun gcd(a, b) {
+    loop {
+        if (b == 0) {
+            break
+        }
+
+        var remainder = a % b
+        a = b
+        b = remainder
+    }
+
+    a
+}
+
+defun run() {
+    gcd(1071, 462)
+}

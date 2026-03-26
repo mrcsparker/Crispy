@@ -133,6 +133,24 @@ namespace Crispy.Parsing
         // FALSE
         KeywordFalse,
 
+        // NULL
+        KeywordNull,
+
+        // DICT
+        KeywordDict,
+
+        // TRY
+        KeywordTry,
+
+        // CATCH
+        KeywordCatch,
+
+        // FINALLY
+        KeywordFinally,
+
+        // THROW
+        KeywordThrow,
+
         // FUNCTION
         KeywordFunction,
 
@@ -144,6 +162,15 @@ namespace Crispy.Parsing
 
         // BREAK
         KeywordBreak,
+
+        // CONTINUE
+        KeywordContinue,
+
+        // FOREACH
+        KeywordForeach,
+
+        // IN
+        KeywordIn,
 
         // LOOP
         KeywordLoop,

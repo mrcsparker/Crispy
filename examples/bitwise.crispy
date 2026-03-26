@@ -1,0 +1,10 @@
+// Bitwise operators and shifts.
+
+defun run() {
+    var masked = 13 & 7
+    var shifted = (1 << 4) | (8 >> 2)
+    var flipped = ~0
+    var toggled = 5 ^^ 3
+
+    masked + shifted + flipped + toggled
+}

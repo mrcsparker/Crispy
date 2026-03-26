@@ -11,11 +11,13 @@ namespace Crispy.Ast
             throw new System.InvalidOperationException("Assignment to non-lvalue");
         }
 
-        public virtual bool IsMember {
+        public virtual bool IsMember
+        {
             get { return false; }
         }
 
-        public virtual string Name {
+        public virtual string Name
+        {
             get { return ""; }
         }
     }

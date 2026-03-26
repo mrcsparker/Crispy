@@ -3,36 +3,45 @@ using System.Linq.Expressions;
 
 namespace Crispy.Ast
 {
-    class BlockStatement : NodeExpression
+    sealed class BlockStatement : NodeExpression
     {
-        private readonly List<NodeExpression> _statements;
+        public List<NodeExpression> Statements { get; }
 
         public BlockStatement(List<NodeExpression> statements)
         {
-            _statements = statements;
+            Statements = statements;
         }
 
         protected internal override Expression Eval(Context scope)
         {
-            if (_statements.Count == 1)
+            if (Statements.Count == 0)
             {
-                var justOne = _statements[0].Eval(scope);
-
-                return Expression.Block(justOne.Type, justOne);
+                return Expression.Constant(null, typeof(object));
             }
 
-            var statements = new Expression[_statements.Count];
+            var blockScope = new Context(scope, "block");
+            var blockVariables = new List<ParameterExpression>();
+
+            if (Statements.Count == 1)
+            {
+                var justOne = Statements[0].Eval(blockScope);
+                blockVariables.AddRange(blockScope.Variables.Values);
+
+                return blockVariables.Count > 0
+                    ? Expression.Block(justOne.Type, blockVariables, justOne)
+                    : Expression.Block(justOne.Type, justOne);
+            }
+
+            var statements = new Expression[Statements.Count];
             for (var i = 0; i < statements.Length; i++)
             {
-                statements[i] = _statements[i].Eval(scope);
+                statements[i] = Statements[i].Eval(blockScope);
             }
+            blockVariables.AddRange(blockScope.Variables.Values);
 
-            return Expression.Block(typeof(object), statements);
-        }
-
-        public List<NodeExpression> Statements
-        {
-            get { return _statements; }
+            return blockVariables.Count > 0
+                ? Expression.Block(typeof(object), blockVariables, statements)
+                : Expression.Block(typeof(object), statements);
         }
     }
 }

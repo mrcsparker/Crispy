@@ -47,7 +47,7 @@ namespace Crispy.Parsing
 
         public int Length()
         {
-            return _reader.ToString().Length;
+            return _reader.ToString()?.Length ?? 0;
         }
     }
 }

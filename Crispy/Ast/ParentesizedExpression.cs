@@ -1,19 +1,19 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 
 namespace Crispy.Ast
 {
-    class ParentesizedExpression : NodeExpression
+    sealed class ParentesizedExpression : NodeExpression
     {
-        private readonly NodeExpression _expression;
+        public NodeExpression Expression { get; }
 
         public ParentesizedExpression(NodeExpression expression)
         {
-            _expression = expression;
+            Expression = expression;
         }
 
         protected internal override Expression Eval(Context scope)
         {
-            return _expression.Eval(scope);
+            return Expression.Eval(scope);
         }
     }
 }

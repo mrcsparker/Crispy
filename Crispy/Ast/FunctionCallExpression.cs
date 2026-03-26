@@ -1,55 +1,53 @@
+using System;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
 using Crispy.Binders;
-using System.Reflection;
-using System;
-using System.Globalization;
 using Crispy.Helpers;
 
 namespace Crispy.Ast
 {
-    internal class FunctionCallExpression : NodeExpression
+    internal sealed class FunctionCallExpression : NodeExpression
     {
-        private readonly IList<NodeExpression> _argumentList;
-        private readonly NodeExpression _methodName;
+        public IList<NodeExpression> ArgumentList { get; }
+        public NodeExpression MethodName { get; }
 
 
         public FunctionCallExpression(NodeExpression methodName, IList<NodeExpression> argumentList)
         {
-            _methodName = methodName;
-            _argumentList = argumentList;
+            MethodName = methodName;
+            ArgumentList = argumentList;
         }
 
         protected internal override Expression Eval(Context context)
         {
-            var fun = _methodName.Eval(context);
-            var args = new List<Expression> {fun};
-            args.AddRange(_argumentList.Select(a => a.Eval(context)));
-
-            if (_methodName.IsMember)
+            var instanceObjectCall = TryInstanceObjects(context);
+            if (instanceObjectCall != null)
             {
-                return Expression.Dynamic(
-                    // Dotted exprs must be simple invoke members, a.b.(c ...) 
-                    context.GetRuntime().GetInvokeMemberBinder(
-                        new InvokeMemberBinderKey(
-                            _methodName.Name,
-                            new CallInfo(_argumentList.ToArray().Length))),
-                    typeof(object),
-                    args
-                );
+                return RuntimeHelpers.EnsureObjectResult(instanceObjectCall);
             }
 
-            return Expression.Dynamic(
-                context.GetRuntime()
-                     .GetInvokeBinder(new CallInfo(_argumentList.ToArray().Length)),
-                typeof (object),
-                args
-            );
-                
+            var fun = MethodName.Eval(context);
+            var args = new List<Expression> { fun };
+            args.AddRange(ArgumentList.Select(a => a.Eval(context)));
+            return MethodName.IsMember
+                ? Expression.Dynamic(
+                    // Dotted exprs must be simple invoke members, a.b.(c ...)
+                    context.Runtime.GetInvokeMemberBinder(
+                        new InvokeMemberBinderKey(
+                            MethodName.Name,
+                            new CallInfo(ArgumentList.Count))),
+                    typeof(object),
+                    args)
+                : Expression.Dynamic(
+                    context.Runtime
+                         .GetInvokeBinder(new CallInfo(ArgumentList.Count)),
+                    typeof(object),
+                    args);
+
         }
-            
+
         /// <summary>
         /// Kind of a bleh way of looking up a method, but this is still in progress.
         /// 
@@ -73,117 +71,107 @@ namespace Crispy.Ast
         /// </summary>
         /// <returns>The instance objects.</returns>
         /// <param name="context">Context.</param>
-        protected Expression TryInstanceObjects(Context context)
+        private MethodCallExpression? TryInstanceObjects(Context context)
         {
-
-            var argumentExpressions = new Expression[_argumentList.Count];
-            var argumentTypes = new Type[_argumentList.Count];
-            for (int i = 0; i < _argumentList.Count; i++)
+            var argumentExpressions = new Expression[ArgumentList.Count];
+            var argumentTypes = new Type[ArgumentList.Count];
+            for (int i = 0; i < ArgumentList.Count; i++)
             {
-                argumentExpressions[i] = _argumentList[i].Eval(context);
-                argumentTypes[i] = argumentExpressions[i].Type;
+                argumentExpressions[i] = ArgumentList[i].Eval(context);
+                argumentTypes[i] = GetArgumentType(ArgumentList[i], argumentExpressions[i]);
             }
 
+            string? resolutionError = null;
             if (context.InstanceObjects != null && context.InstanceObjects.Count > 0)
             {
+                var candidateObjects = GetCandidateInstanceObjects(context.InstanceObjects);
                 foreach (var instanceObject in context.InstanceObjects)
                 {
-                    MethodInfo instanceFunctionCall = FindMethod(instanceObject.GetType(), _methodName.Name,
-                        argumentTypes);
-                    if (instanceFunctionCall != null)
+                    if (!candidateObjects.Contains(instanceObject))
                     {
-                        MethodCallExpression expr = Expression.Call(Expression.Constant(instanceObject),
+                        continue;
+                    }
+
+                    var resolution = RuntimeHelpers.ResolveMethodOverload(
+                        instanceObject.GetType()
+                            .GetMethods()
+                            .Where(method => method.Name.Equals(MethodName.Name, StringComparison.OrdinalIgnoreCase)),
+                        argumentTypes,
+                        "member '" + MethodName.Name + "'");
+                    if (resolution.ErrorMessage != null)
+                    {
+                        resolutionError ??= resolution.ErrorMessage;
+                        continue;
+                    }
+
+                    if (resolution.Method != null)
+                    {
+                        var instanceFunctionCall = resolution.Method;
+                        var parameters = instanceFunctionCall.GetParameters();
+                        var convertedArguments = new Expression[argumentExpressions.Length];
+                        for (int i = 0; i < argumentExpressions.Length; i++)
+                        {
+                            convertedArguments[i] = ConvertArgument(
+                                argumentExpressions[i],
+                                argumentTypes[i],
+                                parameters[i].ParameterType);
+                        }
+
+                        var instanceExpression = instanceFunctionCall.IsStatic
+                            ? null
+                            : Expression.Constant(instanceObject);
+                        MethodCallExpression expr = Expression.Call(instanceExpression,
                             instanceFunctionCall,
-                            argumentExpressions);
+                            convertedArguments);
                         return expr;
                     }
                 }
             }
-            return null;
+
+            return resolutionError != null
+                ? throw new InvalidOperationException(resolutionError)
+                : null;
         }
 
-        public static MethodInfo FindMethod(Type type, string methodName, Type[] argumentTypes)
+        private IEnumerable<object> GetCandidateInstanceObjects(IEnumerable<object> instanceObjects)
         {
-            // Most likely we are passing in something like ABS(1) which maps to
-            // Math.Abs(1).  GetMethod() is case sensitive which is why we have to do this.
-            string tryCapitalCase = methodName.First().ToString(CultureInfo.InvariantCulture).ToUpper() +
-                String.Join("", methodName.Skip(1));
-            if (TryGetMethod(type, tryCapitalCase, argumentTypes) != null)
+            return MethodName is MemberExpression memberExpression &&
+                memberExpression.Expr is NamedExpression namedExpression
+                ? instanceObjects.Where(instanceObject =>
+                    string.Equals(
+                        instanceObject.GetType().Name,
+                        namedExpression.Name,
+                        StringComparison.OrdinalIgnoreCase))
+                : instanceObjects;
+        }
+
+        private static Type GetArgumentType(NodeExpression argument, Expression expression)
+        {
+            return argument is ConstantExpression constantExpression && constantExpression.Value != null
+                ? constantExpression.Value.GetType()
+                : expression.Type;
+        }
+
+        private static Expression ConvertArgument(Expression expression, Type argumentType, Type parameterType)
+        {
+            if (parameterType == typeof(object) && expression.Type == typeof(object))
             {
-                return TryGetMethod(type, tryCapitalCase, argumentTypes);
+                return expression;
             }
 
-            // This probably won't return a match unless people are 
-            // explicitly typing in Abs(1).  Since this is mostly an
-            // expression language users will be used to standard Excel Formula
-            // uppercase-everything
-            if (TryGetMethod(type, methodName, argumentTypes) != null)
+            var convertedExpression = expression;
+            if (argumentType != null && convertedExpression.Type != argumentType)
             {
-                return TryGetMethod(type, methodName, argumentTypes);
+                convertedExpression = Expression.Convert(convertedExpression, argumentType);
             }
 
-            // Now we search for a matching method.
-            // This is going to go through all of the methods and try to
-            // match parameters. 
-            //
-            // For example, ABS(1.0) is going to be matched against double Math.Abs(double i)
-            MethodInfo[] methods = type.GetMethods();
-            foreach (MethodInfo method in methods)
+            if (convertedExpression.Type != parameterType)
             {
-
-                if (method.Name.Equals(methodName, StringComparison.InvariantCultureIgnoreCase) &&
-                    method.GetParameters().Length == argumentTypes.Length)
-                {
-                    ParameterInfo[] parameters = method.GetParameters();
-                    for (int i = 0; i < parameters.Length; i++)
-                    {
-                        ParameterInfo parameter = parameters[i];
-                        if (parameter.IsOut)
-                        {
-                            break;
-                        }
-                        if (!parameter.ParameterType.IsAssignableFrom(argumentTypes[i]))
-                        {
-                            break;
-                        }
-
-                        if (!parameter.ParameterType.IsPrimitive)
-                        {
-                            break;
-                        }
-
-                        if (parameter.ParameterType == typeof (char))
-                        {
-                            break;
-                        }
-
-                        if (i == parameters.Length - 1)
-                        {
-                            return method;
-                        }
-                    }
-                }
+                convertedExpression = Expression.Convert(convertedExpression, parameterType);
             }
-            return null;
+
+            return convertedExpression;
         }
 
-        public static MethodInfo TryGetMethod(Type type, string methodName, Type[] types)
-        {
-            if (!types.Any() || types.FirstOrDefault() == null)
-            {
-                return type.GetMethod(methodName);
-            }
-            return type.GetMethod(methodName, types);
-        }
-
-        public IList<NodeExpression> ArgumentList
-        {
-            get { return _argumentList; }
-        }
-
-        public NodeExpression MethodName
-        {
-            get { return _methodName; }
-        }
     }
 }

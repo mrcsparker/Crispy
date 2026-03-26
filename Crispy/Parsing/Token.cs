@@ -1,4 +1,6 @@
-﻿namespace Crispy.Parsing
+using System.Globalization;
+
+namespace Crispy.Parsing
 {
     public class Token
     {
@@ -17,7 +19,13 @@
 
         public override string ToString()
         {
-            return string.Format("({0},{1}): [{2}] {3}", LineNumber, ColumnNumber, Type, Value);
+            return string.Format(
+                CultureInfo.InvariantCulture,
+                "({0},{1}): [{2}] {3}",
+                LineNumber,
+                ColumnNumber,
+                Type,
+                Value);
         }
     }
 }

@@ -1,0 +1,40 @@
+// A tiny ASCII pyramid.
+
+defun repeat(text, count) {
+    var index = 0
+    var builder = new system.text.StringBuilder()
+
+    loop {
+        if (index >= count) {
+            break
+        }
+
+        builder.Append(text)
+        index = index + 1
+    }
+
+    builder.ToString()
+}
+
+defun appendLine(builder, spaces, stars) {
+    builder.Append(repeat(' ', spaces))
+    builder.Append(repeat('*', stars))
+    builder.Append(system.environment.NewLine)
+}
+
+defun run() {
+    var row = 0
+    var height = 4
+    var builder = new system.text.StringBuilder()
+
+    loop {
+        if (row >= height) {
+            break
+        }
+
+        appendLine(builder, height - row - 1, row + row + 1)
+        row = row + 1
+    }
+
+    builder.ToString()
+}

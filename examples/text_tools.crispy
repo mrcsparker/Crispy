@@ -1,0 +1,13 @@
+// Small text helpers to show module imports with .crispy scripts.
+
+defun bracket(text) {
+    var builder = new system.text.StringBuilder()
+    builder.Append('[[')
+    builder.Append(text)
+    builder.Append(']]')
+    builder.ToString()
+}
+
+defun run() {
+    bracket('helpers')
+}

@@ -1,16 +1,24 @@
-﻿using System;
-using System.Linq.Expressions;
-using Crispy.Helpers;
+using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
+using System.Reflection;
+using Crispy.Helpers;
 
 namespace Crispy.Ast
 {
-    class ImportStatement : NodeExpression
+    sealed class ImportStatement : NodeExpression
     {
-        private readonly List<string> _names = new List<string>();
-        private readonly string _nameAs;
+        private static readonly MethodInfo CrispyImportMethod =
+            typeof(RuntimeHelpers).GetMethod(nameof(RuntimeHelpers.CrispyImport)) ??
+            throw new InvalidOperationException("RuntimeHelpers.CrispyImport was not found.");
+        private static readonly MethodInfo ResolveImportMethod =
+            typeof(RuntimeHelpers).GetMethod(nameof(RuntimeHelpers.ResolveImport)) ??
+            throw new InvalidOperationException("RuntimeHelpers.ResolveImport was not found.");
 
-        public ImportStatement(List<string> names, string nameAs)
+        private readonly List<string> _names = [];
+        private readonly string? _nameAs;
+
+        public ImportStatement(List<string> names, string? nameAs)
         {
             _names = names;
             _nameAs = nameAs;
@@ -18,24 +26,32 @@ namespace Crispy.Ast
 
         protected internal override Expression Eval(Context scope)
         {
-            if (!scope.IsModule)
+            if (scope.IsModule)
             {
-                throw new InvalidOperationException("Import can't be nested.");
+                Expression nameAs = Expression.Constant(new[] { String.Empty });
+                if (_nameAs != null)
+                {
+                    nameAs = Expression.Constant(new[] { _nameAs });
+                }
+
+                return Expression.Call(
+                    CrispyImportMethod,
+                    scope.RuntimeExpr,
+                    scope.ModuleExpr,
+                    Expression.Constant(_names.ToArray()),
+                    nameAs
+                );
             }
 
-            Expression nameAs = Expression.Constant(new [] { String.Empty });
-            if (_nameAs != null)
-            {
-                nameAs = Expression.Constant(new [] { _nameAs });
-            }
-
-            return Expression.Call(
-                typeof(RuntimeHelpers).GetMethod("CrispyImport"),
+            var targetName = _nameAs ?? _names[^1];
+            var local = scope.GetOrMakeLocal(targetName);
+            var value = Expression.Call(
+                ResolveImportMethod,
                 scope.RuntimeExpr,
                 scope.ModuleExpr,
-                Expression.Constant(_names.ToArray()),
-                nameAs 
-            );
+                Expression.Constant(_names.ToArray()));
+
+            return Expression.Assign(local, Expression.Convert(value, local.Type));
         }
     }
 }

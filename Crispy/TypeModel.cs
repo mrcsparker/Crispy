@@ -1,19 +1,20 @@
 using System;
-using System.Linq.Expressions;
 using System.Dynamic;
+using System.Linq.Expressions;
 
 namespace Crispy
 {
-    public class TypeModel : IDynamicMetaObjectProvider {
-        private readonly Type _reflType;
+    internal sealed class TypeModel : IDynamicMetaObjectProvider
+    {
+        public Type ReflType { get; }
 
-        public TypeModel(Type type) {
-            _reflType = type;
+        public TypeModel(Type type)
+        {
+            ReflType = type;
         }
 
-        public Type ReflType { get { return _reflType; } }
-
-        DynamicMetaObject IDynamicMetaObjectProvider.GetMetaObject(Expression parameter) {
+        DynamicMetaObject IDynamicMetaObjectProvider.GetMetaObject(Expression parameter)
+        {
             return new TypeModelMetaObject(parameter, this);
         }
     }

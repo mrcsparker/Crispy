@@ -4,12 +4,14 @@ using Crispy.Helpers;
 
 namespace Crispy.Binders
 {
-    class DoHelpersGetMemberBinder : GetMemberBinder {
+    sealed class DoHelpersGetMemberBinder : GetMemberBinder
+    {
 
         internal DoHelpersGetMemberBinder(string name) : base(name, true) { }
 
         public override DynamicMetaObject FallbackGetMember(
-            DynamicMetaObject target, DynamicMetaObject errorSuggestion) {
+            DynamicMetaObject target, DynamicMetaObject? errorSuggestion)
+        {
             return errorSuggestion ??
                 new DynamicMetaObject(
                     Expression.Constant(DynamicObjectHelpers.Sentinel),
@@ -19,4 +21,3 @@ namespace Crispy.Binders
         }
     }
 }
-

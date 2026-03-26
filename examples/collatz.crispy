@@ -1,0 +1,28 @@
+// Build a Collatz sequence as text.
+
+defun collatzSequence(start) {
+    var value = start
+    var builder = new system.text.StringBuilder()
+
+    loop {
+        builder.Append(value)
+
+        if (value == 1) {
+            break
+        }
+
+        builder.Append(' -> ')
+
+        if ((value % 2) == 0) {
+            value = value / 2
+        } else {
+            value = 3 * value + 1
+        }
+    }
+
+    builder.ToString()
+}
+
+defun run() {
+    collatzSequence(19)
+}

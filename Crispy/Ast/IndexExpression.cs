@@ -1,25 +1,35 @@
-﻿using System.Linq.Expressions;
+using System;
+using System.Linq.Expressions;
+using System.Reflection;
 using Crispy.Helpers;
 
 namespace Crispy.Ast
 {
-    class IndexExpression : NodeExpression
+    sealed class IndexExpression : NodeExpression
     {
-        private readonly NodeExpression _target;
-        private readonly NodeExpression _index;
+        private static readonly MethodInfo GetItemMethod =
+            typeof(RuntimeHelpers).GetMethod(nameof(RuntimeHelpers.GetItem)) ??
+            throw new InvalidOperationException("RuntimeHelpers.GetItem was not found.");
+
+        private static readonly MethodInfo SetItemMethod =
+            typeof(RuntimeHelpers).GetMethod(nameof(RuntimeHelpers.SetItem)) ??
+            throw new InvalidOperationException("RuntimeHelpers.SetItem was not found.");
+
+        public NodeExpression Target { get; }
+        public NodeExpression Index { get; }
 
         public IndexExpression(NodeExpression target, NodeExpression index)
         {
-            _target = target;
-            _index = index;
+            Target = target;
+            Index = index;
         }
 
         protected internal override Expression Eval(Context scope)
         {
             return Expression.Call(
-                typeof(RuntimeHelpers).GetMethod("GetItem"),
-                Expression.Convert(_target.Eval(scope), typeof(object)),
-                Expression.Convert(_index.Eval(scope), typeof(object))
+                GetItemMethod,
+                Expression.Convert(Target.Eval(scope), typeof(object)),
+                Expression.Convert(Index.Eval(scope), typeof(object))
             );
 
         }
@@ -27,21 +37,11 @@ namespace Crispy.Ast
         internal protected override Expression SetVariable(Context scope, Expression right)
         {
             return Expression.Call(
-                typeof(RuntimeHelpers).GetMethod("SetItem"),
-                Expression.Convert(_target.Eval(scope), typeof(object)),
-                Expression.Convert(_index.Eval(scope), typeof(object)),
+                SetItemMethod,
+                Expression.Convert(Target.Eval(scope), typeof(object)),
+                Expression.Convert(Index.Eval(scope), typeof(object)),
                 Expression.Convert(right, typeof(object))
             );
-        }
-
-        public NodeExpression Target
-        {
-            get { return _target; }
-        }
-
-        public NodeExpression Index
-        {
-            get { return _index; }
         }
     }
 }

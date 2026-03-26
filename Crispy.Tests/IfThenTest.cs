@@ -1,31 +1,29 @@
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
-using System.Linq.Expressions;
 using Crispy.Tests.Data;
 using NUnit.Framework;
-/*
+
 namespace Crispy.Tests
 {
     [TestFixture]
     public class IfThenTest
     {
-        public delegate void Action();
-
-        private static IEnumerable<Product> GetProductList()
+        private static List<Product> GetProductList()
         {
             var products = new List<Product>
-                {
-                    new Product {Name = "Item1", Price = 1, Volume = 1},
-                    new Product {Name = "Item2", Price = 2, Volume = 2},
-                    new Product {Name = "Item3", Price = 3, Volume = 3},
-                    new Product {Name = "Item4", Price = 4, Volume = 4},
-                    new Product {Name = "Item5", Price = 5, Volume = 5},
-                    new Product {Name = "Item6", Price = 6, Volume = 6},
-                    new Product {Name = "Item7", Price = 7, Volume = 7},
-                    new Product {Name = "Item8", Price = 8, Volume = 8},
-                    new Product {Name = "Item9", Price = 9, Volume = 9},
-                    new Product {Name = "Item10", Price = 10, Volume = 10}
-                };
+            {
+                new() {Name = "Item1", Price = 1, Volume = 1},
+                new() {Name = "Item2", Price = 2, Volume = 2},
+                new() {Name = "Item3", Price = 3, Volume = 3},
+                new() {Name = "Item4", Price = 4, Volume = 4},
+                new() {Name = "Item5", Price = 5, Volume = 5},
+                new() {Name = "Item6", Price = 6, Volume = 6},
+                new() {Name = "Item7", Price = 7, Volume = 7},
+                new() {Name = "Item8", Price = 8, Volume = 8},
+                new() {Name = "Item9", Price = 9, Volume = 9},
+                new() {Name = "Item10", Price = 10, Volume = 10}
+            };
 
             foreach (Product product in products)
             {
@@ -51,9 +49,7 @@ namespace Crispy.Tests
                 endif
             ";
 
-            Expression expression = Compiler.Compile(text, product);
-            Action output = Expression.Lambda<Action>(expression).Compile();
-            output.Invoke();
+            Execute(text, product);
 
             Assert.AreEqual(product.GetOutput(), "One Equals one.");
         }
@@ -69,9 +65,7 @@ namespace Crispy.Tests
                     AddOutput('This is data')
                 endif";
 
-            Expression expression = Compiler.Compile(text, product);
-            Action output = Expression.Lambda<Action>(expression).Compile();
-            output.Invoke();
+            Execute(text, product);
 
             Assert.AreEqual(product.GetOutput(), "This is data");
         }
@@ -87,9 +81,7 @@ namespace Crispy.Tests
                     AddOutput('This is data')
                 endif";
 
-            Expression expression = Compiler.Compile(text, product);
-            Action output = Expression.Lambda<Action>(expression).Compile();
-            output.Invoke();
+            Execute(text, product);
 
             Assert.AreEqual(product.GetOutput(), "This is data");
         }
@@ -108,9 +100,7 @@ namespace Crispy.Tests
                 end
             ";
 
-            Expression expression = Compiler.Compile(text, product);
-            Action output = Expression.Lambda<Action>(expression).Compile();
-            output.Invoke();
+            Execute(text, product);
 
             Assert.AreEqual(product.GetOutput(), "yes");
         }
@@ -135,9 +125,7 @@ namespace Crispy.Tests
                 endif
             ";
 
-            Expression expression = Compiler.Compile(text, product);
-            Action output = Expression.Lambda<Action>(expression).Compile();
-            output.Invoke();
+            Execute(text, product);
 
             Assert.AreEqual(product.GetOutput(), "One Equals one.Two is greater than one.");
         }
@@ -158,9 +146,7 @@ namespace Crispy.Tests
                 endif
             ";
 
-            Expression expression = Compiler.Compile(text, product);
-            Action output = Expression.Lambda<Action>(expression).Compile();
-            output.Invoke();
+            Execute(text, product);
 
             Assert.AreEqual(product.GetOutput(), "One Equals one.Two is greater than one.");
         }
@@ -181,9 +167,7 @@ namespace Crispy.Tests
                 endif
             ";
 
-            Expression expression = Compiler.Compile(text, product);
-            Action output = Expression.Lambda<Action>(expression).Compile();
-            output.Invoke();
+            Execute(text, product);
 
             Assert.AreEqual(product.GetOutput(), "One Equals one.Two is greater than one.");
         }
@@ -208,9 +192,7 @@ namespace Crispy.Tests
                 endif
             ";
 
-            Expression expression = Compiler.Compile(text, product);
-            Action output = Expression.Lambda<Action>(expression).Compile();
-            output.Invoke();
+            Execute(text, product);
 
             Assert.AreEqual(product.GetOutput(), "Top 3 priceTwo is greater than one.");
         }
@@ -235,11 +217,15 @@ namespace Crispy.Tests
                 endif
             ";
 
-            Expression expression = Compiler.Compile(text, product);
-            Action output = Expression.Lambda<Action>(expression).Compile();
-            output.Invoke();
+            Execute(text, product);
 
             Assert.AreEqual(product.GetOutput(), string.Empty);
         }
+
+        private static void Execute(string text, Product product)
+        {
+            var crispy = new CrispyRuntime(new[] { typeof(object).Assembly }, new object[] { product });
+            crispy.ExecuteExpr(text, new ExpandoObject());
+        }
     }
-}*/
+}

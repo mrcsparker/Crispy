@@ -1,8 +1,7 @@
+using System.Dynamic;
+using System.Reflection;
 using Crispy.Tests.Data;
 using NUnit.Framework;
-using System.Reflection;
-using System.Dynamic;
-using System;
 
 namespace Crispy.Tests
 {
@@ -10,29 +9,28 @@ namespace Crispy.Tests
     public class InstanceObjectLoad
     {
 
-        private readonly Crispy _Crispy;
+        private readonly CrispyRuntime _Crispy;
 
-        public MetricsModel MakeSimpleMetricsModel()
+        private static MetricsModel MakeSimpleMetricsModel()
         {
             return new MetricsModel
-                {
-                    Id = 1,
-                    Name = "Foo",
-                    Sales = 198,
-                    Volume = 122,
-                    Margin = 31,
-                    Profit = 31
-                };
+            {
+                Id = 1,
+                Name = "Foo",
+                Sales = 198,
+                Volume = 122,
+                Margin = 31,
+                Profit = 31
+            };
         }
 
         public InstanceObjectLoad()
         {
-            string dllPath = typeof(object).Assembly.Location;
-            Assembly asm = Assembly.LoadFile(dllPath);
+            Assembly asm = typeof(object).Assembly;
 
             var metricsModel = MakeSimpleMetricsModel();
 
-            _Crispy = new Crispy(new[] { asm }, new [] { metricsModel });
+            _Crispy = new CrispyRuntime(new[] { asm }, new[] { metricsModel });
         }
 
         public object Exec(string text)
@@ -43,20 +41,20 @@ namespace Crispy.Tests
         [Test]
         public void ShouldBeAbleToPlugInAModel()
         {
-            double r = (double) Exec("GetSales()");
+            double r = (double)Exec("ReadSales()");
             Assert.AreEqual(198, r);
 
-            r = (double) Exec("GetVolume()");
+            r = (double)Exec("ReadVolume()");
             Assert.AreEqual(122, r);
         }
 
         [Test]
         public void ShouldBeAbleToPlugInAModelAndCompare()
         {
-            bool r = (bool) Exec("MetricsModel.GetVolume() > 1.0");
+            bool r = (bool)Exec("MetricsModel.ReadVolume() > 1.0");
             Assert.IsTrue(r);
 
-            r = (bool) Exec("1.0 < GetVolume()");
+            r = (bool)Exec("1.0 < ReadVolume()");
             Assert.IsTrue(r);
         }
 
