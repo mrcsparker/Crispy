@@ -65,16 +65,18 @@ namespace Crispy.Binders
                 return new DynamicMetaObject(
                     // Assign returns the stored value, so we're good for Crispy.
                     RuntimeHelpers.EnsureObjectResult(
-                            Expression.Assign(
-                                Expression.MakeMemberAccess(
-                                    Expression.Convert(target.Expression,
-                                        declaringType),
+                        Expression.Assign(
+                            Expression.MakeMemberAccess(
+                                Expression.Convert(
+                                    target.Expression,
+                                    declaringType),
                                 members[0]),
                             val)),
                     // Don't need restriction test for name since this
                     // rule is only used where binder is used, which is
                     // only used in sites with this binder.Name.
-                    BindingRestrictions.GetTypeRestriction(target.Expression,
+                    BindingRestrictions.GetTypeRestriction(
+                        target.Expression,
                         target.LimitType));
             }
             return errorSuggestion ??

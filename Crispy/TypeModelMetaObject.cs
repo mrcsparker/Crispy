@@ -42,9 +42,7 @@ namespace Crispy
                     Restrictions.Merge(
                         BindingRestrictions.GetInstanceRestriction(
                             Expression,
-                            Value)
-                    )
-                )
+                            Value)))
                 : binder.FallbackGetMember(this);
         }
 

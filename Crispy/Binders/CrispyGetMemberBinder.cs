@@ -53,13 +53,15 @@ namespace Crispy.Binders
                 return new DynamicMetaObject(
                     RuntimeHelpers.EnsureObjectResult(
                         Expression.MakeMemberAccess(
-                            Expression.Convert(target.Expression,
+                            Expression.Convert(
+                                target.Expression,
                                 declaringType),
                             members[0])),
                     // Don't need restriction test for name since this
                     // rule is only used where binder is used, which is
                     // only used in sites with this binder.Name.
-                    BindingRestrictions.GetTypeRestriction(target.Expression,
+                    BindingRestrictions.GetTypeRestriction(
+                        target.Expression,
                         target.LimitType));
             }
             return errorSuggestion ??

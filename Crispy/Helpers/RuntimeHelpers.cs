@@ -281,11 +281,10 @@ namespace Crispy.Helpers
                 {
                     continue;
                 }
-                if (!paramType
-                        // Could check for HasValue and Value==null AND
-                        // (paramtype is class or interface) or (is generic
-                        // and nullable<T>) ... to bind nullables and null.
-                        .IsAssignableFrom(args[i].LimitType))
+                // Could check for HasValue and Value==null AND
+                // (paramtype is class or interface) or (is generic
+                // and nullable<T>) ... to bind nullables and null.
+                if (!paramType.IsAssignableFrom(args[i].LimitType))
                 {
                     return false;
                 }
@@ -616,20 +615,17 @@ namespace Crispy.Helpers
             // Get tm.ReflType
             var pi = typeof(TypeModel).GetProperty("ReflType") ??
                 throw new InvalidOperationException("TypeModel.ReflType property was not found.");
+            // We no longer pass an explicit value here. If a fallback binder
+            // does not check HasValue and calls Defer, that can loop. After
+            // Crispy added Defer checks, this should remain safe.
             return new DynamicMetaObject(
                 Expression.Property(
                     Expression.Convert(typeModelMO.Expression, typeof(TypeModel)),
                     pi),
                 typeModelMO.Restrictions.Merge(
                     BindingRestrictions.GetTypeRestriction(
-                        typeModelMO.Expression, typeof(TypeModel)))//,
-                                                                   // Must supply a value to prevent binder FallbackXXX methods
-                                                                   // from infinitely looping if they do not check this MO for
-                                                                   // HasValue == false and call Defer.  After Crispy added Defer
-                                                                   // checks, we could verify, say, FallbackInvokeMember by no
-                                                                   // longer passing a value here.
-                                                                   //((TypeModel)typeModelMO.Value).ReflType
-            );
+                        typeModelMO.Expression,
+                        typeof(TypeModel))));
         }
 
         // Returns list of Convert exprs converting args to param types.  If an arg
@@ -774,8 +770,9 @@ namespace Crispy.Helpers
                         // Force expression to be type object so that DLR CallSite
                         // code things only type object flows out of the CallSite.
                         typeof(object)),
-                    target.Restrictions.Merge(BindingRestrictions.Combine(args ?? Array.Empty<DynamicMetaObject>()))
-                                       .Merge(moreTests));
+                    target.Restrictions
+                          .Merge(BindingRestrictions.Combine(args ?? Array.Empty<DynamicMetaObject>()))
+                          .Merge(moreTests));
         }
 
         public static DynamicExpression MakeInvokeExpression(Expression target, DynamicMetaObject[] args)

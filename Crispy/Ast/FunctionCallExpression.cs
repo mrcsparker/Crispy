@@ -39,14 +39,12 @@ namespace Crispy.Ast
                             MethodName.Name,
                             new CallInfo(ArgumentList.Count))),
                     typeof(object),
-                    args
-                )
+                    args)
                 : Expression.Dynamic(
                     context.Runtime
                          .GetInvokeBinder(new CallInfo(ArgumentList.Count)),
                     typeof(object),
-                    args
-                );
+                    args);
 
         }
 
